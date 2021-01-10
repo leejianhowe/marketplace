@@ -1,0 +1,75 @@
+<div class="container">
+  <div class="row">
+
+    <div class="col-4">
+      <div class="input-group mt-3">
+        <div class="custom-file">
+          <label class="custom-file-label">Choose Images</label>
+          <input type="file" class="custom-file-input" accept="image/" #images type="file" (change)="showImage()" multiple>
+        </div>
+      </div>
+      <div class="container" >
+        <div class="row">
+          <div class="col-2" class="mr-3 mt-3"  *ngFor="let item of chosenImages; let index = index">
+            <img [src]="item"  style="border: solid 1px black; height: 64px;width: 64px;" *ngIf="chosenImages">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-8">
+      <form [formGroup]="form" (ngSubmit)="postItem()">
+        <div class="form-group">
+          <label>Title</label>
+          <input class="form-control" type="text" formControlName="title" placeholder="Post Title">
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select formControlName="category" class="form-control">
+            <option value="electronics">Electronics</option>
+            <option value="fashion">Fashion</option>
+            <option value="household">Household</option>
+            <option value="accessories">Accessories</option>
+            <option value="others">Others</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Price</label>
+          <input type="number" class="form-control" formControlName="price" placeholder="Your Price">
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" formControlName="condition" value="new">
+          <label class="form-check-label">New</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" formControlName="condition" value="used">
+          <label class="form-check-label">Used</label>
+        </div>
+        <div class="form-group mt-2">
+          <label>Description</label>
+          <textarea class="form-control" formControlName="description" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Deal Method</label>
+          <select formControlName="dealMethod" class="form-control">
+            <option value="meet up">Meet Up</option>
+            <option value="post">Post</option>
+            <option value="delivery">Delivery</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Payment Method</label>
+          <select formControlName="paymentMethod" class="form-control">
+            <option value="cash">Cash</option>
+            <option value="paynow">PayNow</option>
+            <option value="paylah">Paylah</option>
+            <option value="googlepay">GooglePay</option>
+          </select>
+        </div>
+        <button class="submnit" type="submit">Post</button>
+      </form>
+      <div *ngIf="errorMessage">{{errorMessage}}</div>
+    </div>
+
+  </div>
+</div>

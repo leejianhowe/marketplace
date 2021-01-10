@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Marketplace</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+  <app-root></app-root>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script type="text/javascript">
+    const stripe   = Stripe('pk_test_51I84IeCe6jNzcQRaPGQjWqvqxBZLAhshhLFZ2EQiOkNXsMkRiPZMFwfUl2Zdv40WPbH6cwFlWThul6xCEEY0r5q400I7yOr5iG');
+    const elements = stripe.elements();
+  </script>
+</body>
+</html>
