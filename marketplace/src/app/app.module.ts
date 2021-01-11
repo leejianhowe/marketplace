@@ -16,11 +16,15 @@ import { DatabaseService } from './shared/database.service';
 import { AuthService } from './shared/auth.service'
 import { AuthInterceptor } from './shared/auth-interceptor'
 import {PaymentService} from './shared/payment.service'
-
+import { CartService} from './shared/cart.service'
 import { SocialLoginModule } from 'angularx-social-login';
 import { SocialAuthServiceConfig } from 'angularx-social-login';
 import { GoogleLoginProvider } from 'angularx-social-login';
 import { SubscribeComponent } from './components/subscribe/subscribe.component';
+import { SignupComponent } from './components/signup/signup.component';
+import { CartComponent } from './components/cart/cart.component';
+import { SuccessComponent } from './components/success/success.component';
+import { FailureComponent } from './components/failure/failure.component';
 
 
 @NgModule({
@@ -33,6 +37,10 @@ import { SubscribeComponent } from './components/subscribe/subscribe.component';
     SearchItemsComponent,
     LoginComponent,
     SubscribeComponent,
+    SignupComponent,
+    CartComponent,
+    SuccessComponent,
+    FailureComponent,
   ],
   imports: [
     BrowserModule,
@@ -40,7 +48,8 @@ import { SubscribeComponent } from './components/subscribe/subscribe.component';
     HttpClientModule,
     FormsModule,
     ReactiveFormsModule,
-    SocialLoginModule
+    SocialLoginModule,
+    
   ],
   providers: [DatabaseService,{
     provide: 'SocialAuthServiceConfig',
@@ -54,7 +63,7 @@ import { SubscribeComponent } from './components/subscribe/subscribe.component';
       ],
     } as SocialAuthServiceConfig,
   },AuthService,
-  { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },PaymentService],
+  { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },PaymentService,CartService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

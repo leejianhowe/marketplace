@@ -31,5 +31,8 @@ export class SearchbarComponent implements OnInit {
       .catch(err=>{
         console.log(err)})
   }
-
+  logout(){
+    this.authService.signOut()
+    this.router.navigate(['/'])
+  }
 }

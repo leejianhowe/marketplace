@@ -37,5 +37,12 @@ export class AuthService {
   signIn(data){
     return this.http.post('/api/login',data,{observe:'response'}).toPromise()
   }
-
+  signUp(data){
+    return this.http.post('/api/signup',data,{observe:'response'}).toPromise()
+  }
+  signOut(){
+    this.token = ''
+    this.loggedIn = false
+    this.hasToken.emit(false)
+  }
 }

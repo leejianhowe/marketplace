@@ -47,3 +47,10 @@ export interface ItemDetails{
   title: string,
   _id: string
 }
+
+export interface CartItemsDetail{
+  itemId: string,
+  title:string,
+  qty:number,
+  price:number
+}

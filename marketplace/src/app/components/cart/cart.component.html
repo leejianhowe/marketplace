@@ -1,0 +1,30 @@
+<div class="container">
+    <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Item</th>
+            <th scope="col">Qty</th>
+            <th scope="col">Price($)</th>
+            <th scope="col">Subtotal($)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of cart;let i = index">
+            <th scope="row">{{i+1}}</th>
+            <td>{{item.title}}</td>
+            <td>{{item.qty}}</td>
+            <td>{{item.price}}</td>
+            <td>{{item.qty * item.price}}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+            <td style="text-align: end;"scope="row" colspan="4">Grandtotal</td>
+            <td>{{total|currency}}</td>
+        </tfoot>
+      </table>
+      <div class="row d-flex justify-content-end">
+          <button type="button" (click)="checkout()">Checkout</button>
+
+      </div>
+</div>

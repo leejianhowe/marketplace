@@ -20,7 +20,7 @@ export class LoginComponent implements OnInit {
     private fb:FormBuilder
   ) {
     this.form = this.fb.group({
-      username: this.fb.control('',[Validators.required]),
+      username: this.fb.control('',[Validators.required,Validators.email]),
       password: this.fb.control('',[Validators.required])
     })
   }
@@ -42,7 +42,7 @@ export class LoginComponent implements OnInit {
         this.authService.token = res.body['token']
         this.authService.hasToken.emit(true)
       }
-      this.router.navigate(['/'])
+      this.router.navigate(['/main'])
     }).catch(err=>{
       console.log('error',err)
       if(err.status === 401){

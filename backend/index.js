@@ -34,7 +34,8 @@ const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_KEY);
 
 // modules
-const {makeItem,putObject,uploadFiles,summariseData,mkAuth,generateToken} = require('./modules')
+const {makeItem,putObject,uploadFiles,summariseData,mkAuth,generateToken,makeCart} = require('./modules')
+const { session } = require('passport')
 
 
 // configure local stratgey
@@ -94,6 +95,7 @@ const checkAuth = (req, resp, next) => {
         const verified = jwt.verify(token, TOKEN_SECRET)
         console.info(`Verified token: `, verified)
         req.token = verified
+        req.encodedToken = token
         next()
     } catch(e) {
         resp.status(403)
@@ -112,9 +114,12 @@ const upload = multer({dest:'uploads/',limits: { fileSize: maxSize }})
 
 const MONGO_DB = 'marketplace'
 const MONGO_COL = 'items'
+const MONGO_COL_ORDERS = 'orders'
 const MONGO_COL_USERS = 'users'
-const MONGO_URL = 'mongodb://localhost:27017'
-const client = new MongoClient(MONGO_URL,{useNewUrlParser:true,useUnifiedTopology:true})
+const MONGO_COL_SESSIONS = 'sessions'
+// const MONGO_URL = 'mongodb://localhost:27017'
+const MONGO_URI = `mongodb+srv://spaceman:${process.env.MONGO_PASS}@nosqldb.u0xa5.mongodb.net/${MONGO_DB}?retryWrites=true&w=majority`
+const client = new MongoClient(MONGO_URI,{useNewUrlParser:true,useUnifiedTopology:true})
 
 const credentials = new AWS.SharedIniFileCredentials({profile: 'marketplacesg'});
 AWS.config.credentials = credentials
@@ -143,64 +148,105 @@ app.post('/login',mkAuth(passport),(req,res)=>{
 
 app.post('/signup', async (req,res)=>{
     const username = req.body.username
-    const password = req.body.password
-    try{
-        const isFound = await client.db(MONGO_DB).collection(MONGO_COL_USERS).findOne({user:username})
-        if(isFound !=null){
-            res.status(200)
-            res.type('application/json')
-            res.json({
-                message: 'Username exists'
-            })    
-        }else{
-            const hash = await bcrypt.hash(password,saltRounds)
-            const isRegistered = await client.db(MONGO_DB).collection(MONGO_COL_USERS).insertOne({user:username,password:hash})
-            console.log(isRegistered.insertedCount)
-            const user = {
-                username: username,
-                loginTime: (new Date()).toString()
+    const password = (req.body.password).toString()
+    const password1 = (req.body.password1).toString()
+    if(password1!=password){
+        res.status(400)
+        res.type('application/json')        
+        res.json({
+            message: 'bad details'
+        })
+    }
+    else {
+        try{
+            const isFound = await client.db(MONGO_DB).collection(MONGO_COL_USERS).findOne({user:username})
+            if(isFound !=null){
+                res.status(400)
+                res.type('application/json')
+                res.json({
+                    message: 'Username exists'
+                })    
+            }else{
+                const hash = await bcrypt.hash(password,saltRounds)
+                const isRegistered = await client.db(MONGO_DB).collection(MONGO_COL_USERS).insertOne({user:username,password:hash})
+                console.log(isRegistered.insertedCount)
+                const user = {
+                    username: username,
+                    loginTime: (new Date()).toString()
+                }
+                const token = generateToken(jwt,user,TOKEN_SECRET)
+                res.status(201)
+                res.type('application/json')
+                res.json({message:'User registered',token})
             }
-            const token = generateToken(jwt,user,TOKEN_SECRET)
-            res.status(201)
-            res.type('application/json')
-            res.json({message:'User registered',token})
+        }catch(err){
+            console.log(err)
         }
-    }catch(err){
-        console.log(err)
     }
 })
 
+app.get('/check-session',async (req,res)=>{
+    const session_id = req.query.session_id
+    const status = req.query.status
+    console.log('session_id',session_id)
+    console.log('status',status)
+    if(status=='success'){
+        await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).findOneAndUpdate({session_id:session_id,payment_status:'unpaid'},{$set:{payment_status:'paid'}})
+        const result = await client.db(MONGO_DB).collection(MONGO_COL_SESSIONS).findOne({session_id:session_id})
+        console.log(result)
+        const token = result['token']
+        res.status(200)
+        res.type('application/json')
+        res.json({token})
+
+        
+    } else {
+        await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).findOneAndUpdate({session_id:session_id,payment_status:'unpaid'},{$set:{payment_status:'failed'}})
+        const result = await client.db(MONGO_DB).collection(MONGO_COL_SESSIONS).findOne({session_id:session_id})
+        res.status(200)
+        res.type('application/json')
+        res.json({token})
+    }
+    res.end()
+
+})
+
+
+// check if request has valid token before access
+app.use(checkAuth)
+
 app.post("/create-checkout-session", async (req, res) => {
-    const { priceId } = req.body;
-    console.log(priceId)
+    const cart = req.body.cart;
+    const user = req.token.sub
+    console.log('user',user)
+    console.log('cart recived',cart)
+    const line_items = makeCart(cart)
+    console.log(line_items)
     // See https://stripe.com/docs/api/checkout/sessions/create
     // for additional parameters to pass.
     try {
-      const session = await stripe.checkout.sessions.create({
-        mode: "subscription",
-        payment_method_types: ["card"],
-        line_items: [
-          {
-            price: priceId,
-            // For metered billing, do not pass quantity
-            quantity: 1,
-          },
-        ],
-        // {CHECKOUT_SESSION_ID} is a string literal; do not change it!
-        // the actual Session ID is returned in the query parameter when your customer
-        // is redirected to the success page.
-        success_url: 'http://localhost:4200/subscribe?session_id={CHECKOUT_SESSION_ID}',
-        cancel_url: 'http://localhost:4200/subscribe',
-      });
-      console.log(session)
-  
-      res.json({
-        sessionId: session.id,
-      });
+        const session = await stripe.checkout.sessions.create({
+            mode: "payment",
+            payment_method_types: ["card"],
+            line_items: line_items,
+            client_reference_id:user,
+            customer_email:user,
+            success_url: 'http://localhost:4200/#/success?session_id={CHECKOUT_SESSION_ID}&status=success',
+            cancel_url: 'http://localhost:4200/#/failure?session_id={CHECKOUT_SESSION_ID}&status=fail',
+        });
+        console.log('session',session)
+        const order = await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).insertOne({user:user,session_id:session.id,payment_status:session.payment_status,order:cart})
+        const saveSession = await client.db(MONGO_DB).collection(MONGO_COL_SESSIONS).insertOne({user:user,session_id:session.id,token:req.encodedToken})
+        Promise.all([session,order,saveSession]).then(()=>{
+            // console.log(order)
+            res.json({
+                sessionId: session.id,
+            });
+        })
     } catch (e) {
         console.log(e)
         res.status(400);
-        return res.send({
+        res.json({
             error: {
             message: e.message,
             }
@@ -208,8 +254,7 @@ app.post("/create-checkout-session", async (req, res) => {
     }
   });
 
-// check if request has valid token before access
-app.use(checkAuth)
+
 
 app.get('/items',async (req,res)=>{
     const results = await client.db(MONGO_DB).collection(MONGO_COL).find().toArray()

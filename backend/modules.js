@@ -87,4 +87,23 @@ const generateToken = (jwt,user,TOKEN_SECRET)=>{
     }, TOKEN_SECRET)
 }
 
-module.exports = {makeItem,putObject,uploadFiles,summariseData,mkAuth,generateToken}
+const makeCart = (cart) => cart.map(ele=>{
+    const item ={
+        price_data:{
+            currency: 'sgd',
+            product_data: {
+            name: ele.title,
+            images: ['https://i.imgur.com/EHyR2nP.png'],
+            },
+            unit_amount: parseInt(ele.price*100),
+        },
+        quantity: parseInt(ele.qty)
+    }
+    console.log('make line item',item)
+    return item
+
+})
+    
+
+
+module.exports = {makeItem,putObject,uploadFiles,summariseData,mkAuth,generateToken,makeCart}

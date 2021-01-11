@@ -1,0 +1,36 @@
+.google-logo{
+    height:18px;
+    width: 18px;
+  }
+  .google-font{
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    color:#000000;
+    opacity: 0.54;
+    padding-left: 24px;
+    height: 18px;
+  }
+  
+  .google-button{
+    background-color: #ffffff;
+    border-radius: 100px;
+    height:40px;
+    padding:8px;
+    display: flex;
+    align-items: center;
+    border: none;
+    text-decoration: none;
+    border: solid #000000 2px 0.5;
+  }
+  a.google-button:hover{
+    opacity: 0.6;
+  }
+  
+  a.google-button:active{
+    border: solid #000000 2px;
+  }
+  
+  a.google-button:focus {
+    border: solid;
+  }
+  
