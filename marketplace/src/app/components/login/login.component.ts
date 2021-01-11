@@ -28,8 +28,11 @@ export class LoginComponent implements OnInit {
   ngOnInit() {}
 
   async loginGoogle() {
-    // await this.authService.signInWithGoogle();
-    await this.router.navigate(['/']);
+    const results = await this.authService.signInWithGoogle();
+    console.log(results)
+    const idToken = results['idToken']
+    await this.authService.getToken(idToken)
+    // await this.router.navigate(['/']);
   }
 
   login() {
@@ -40,7 +43,10 @@ export class LoginComponent implements OnInit {
       if(res.status === 200)
       {
         this.authService.token = res.body['token']
+        this.authService.role = res.body['role']
+        console.log(this.authService)
         this.authService.hasToken.emit(true)
+        this.authService.hasRole.emit(this.authService.role)
       }
       this.router.navigate(['/main'])
     }).catch(err=>{

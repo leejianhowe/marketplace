@@ -16,6 +16,7 @@ export class ItemDetailsComponent implements OnInit {
   displayImage:string
   images:string[] = []
   itemId:string
+  message:string
   url:string ='https://marketplacesg.sfo2.digitaloceanspaces.com'
   constructor(private route:ActivatedRoute,private itemService:DatabaseService, private fb:FormBuilder, private cartService:CartService) { }
 
@@ -49,6 +50,7 @@ export class ItemDetailsComponent implements OnInit {
     } as CartItemsDetail
     console.log(item)
     this.cartService.addItem(item)
+    this.message = 'Added to cart'
   }
   
 

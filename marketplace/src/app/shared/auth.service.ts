@@ -12,8 +12,9 @@ export class AuthService {
   user: SocialUser;
   loggedIn: boolean;
   token:string = ''
-
+  role:number = 0
   @Output() hasToken: EventEmitter<boolean> = new EventEmitter()
+  @Output() hasRole: EventEmitter<number> = new EventEmitter()
 
   constructor(private authService: SocialAuthService, private http:HttpClient) {}
 
@@ -26,9 +27,14 @@ export class AuthService {
     // });
   }
 
-  // async signInWithGoogle(): Promise<void> {
-  //   await this.authService.signIn(GoogleLoginProvider.PROVIDER_ID);
-  // }
+  signInWithGoogle() {
+    return this.authService.signIn(GoogleLoginProvider.PROVIDER_ID);
+    
+  }
+  signupGoogle(idToken){
+    return this.http.post('/api/signup/google',{idToken},{observe:'response'}).toPromise()
+
+  }
 
   // signOut(): void {
   //   this.authService.signOut();

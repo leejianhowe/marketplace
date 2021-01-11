@@ -20,10 +20,10 @@ import { CartService} from './shared/cart.service'
 import { SocialLoginModule } from 'angularx-social-login';
 import { SocialAuthServiceConfig } from 'angularx-social-login';
 import { GoogleLoginProvider } from 'angularx-social-login';
-import { SubscribeComponent } from './components/subscribe/subscribe.component';
+import { LandingComponent } from './components/landing/landing.component';
 import { SignupComponent } from './components/signup/signup.component';
 import { CartComponent } from './components/cart/cart.component';
-import { SuccessComponent } from './components/success/success.component';
+import { PaymentStatusComponent } from './components/payment-status/payment-status.component';
 import { FailureComponent } from './components/failure/failure.component';
 
 
@@ -36,10 +36,10 @@ import { FailureComponent } from './components/failure/failure.component';
     PostItemComponent,
     SearchItemsComponent,
     LoginComponent,
-    SubscribeComponent,
+    LandingComponent,
     SignupComponent,
     CartComponent,
-    SuccessComponent,
+    PaymentStatusComponent,
     FailureComponent,
   ],
   imports: [

@@ -7,19 +7,21 @@
 
   <div class="collapse navbar-collapse" id="navbarSupportedContent">
     <ul class="navbar-nav ml-auto">
+      <li *ngIf="hasToken" class="nav-item">
+        <a class="nav-link" [routerLink]="['/main']">Main</a>
+      </li>
+      <li *ngIf="hasToken && role==1" class="nav-item">
+        <a class="nav-link" [routerLink]="['/sell']">Post</a>
+      </li>
+    </ul>
+    <ul class="navbar-nav auto">
       <li *ngIf="!hasToken" class="nav-item">
         <a class="nav-link" [routerLink]="['/login']">Login</a>
       </li>
       <li *ngIf="!hasToken" class="nav-item">
         <a class="nav-link" [routerLink]="['/signup']">Sign Up</a>
       </li>
-      <li *ngIf="hasToken" class="nav-item">
-        <a class="nav-link" [routerLink]="['/main']">Main</a>
-      </li>
-      <li *ngIf="hasToken" class="nav-item">
-        <a class="nav-link" [routerLink]="['/sell']">Post</a>
-      </li>
-      <li *ngIf="hasToken" class="nav-item">
+      <li *ngIf="hasToken && role==0" class="nav-item">
         <a class="nav-link" [routerLink]="['/cart']">Checkout</a>
       </li>
       <li *ngIf="hasToken" class="nav-item">

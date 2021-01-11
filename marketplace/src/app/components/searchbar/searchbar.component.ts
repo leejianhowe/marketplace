@@ -12,6 +12,7 @@ export class SearchbarComponent implements OnInit {
   form:FormGroup
   constructor(private fb:FormBuilder,private databaseService:DatabaseService, private router:Router,private authService:AuthService) { }
   hasToken:boolean=false
+  role:number=0
   ngOnInit(): void {
     this.form = this.fb.group({
       search: this.fb.control('')
@@ -19,6 +20,10 @@ export class SearchbarComponent implements OnInit {
     this.authService.hasToken.subscribe((res)=>{
       console.log('hastoken',res)
       this.hasToken = res
+    })
+    this.authService.hasRole.subscribe(res=>{
+      console.log('role',res)
+      this.role = res
     })
   }
   search(){

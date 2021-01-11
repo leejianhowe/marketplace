@@ -103,7 +103,33 @@ const makeCart = (cart) => cart.map(ele=>{
     return item
 
 })
+
+const authGoogle = async (idToken,oauthClient,GOOGLE_CLIENT_ID) => {
+    try{
+        const ticket = await oauthClient.verifyIdToken({
+            idToken: idToken,
+            audience: GOOGLE_CLIENT_ID
+        });
+        const payload = ticket.getPayload();
+        const userDetails = {
+            email: payload['email'],
+            firstname: payload['given_name'],
+            lastname: payload['family_name']
+        }
+        return userDetails
+        // let token = jwt.sign({data:userDetails}, process.env.GOOGLE_CLIENT_SECRET, {
+        //     expiresIn: 900 // 15mins
+        // })
+        // req.token = token
+        // console.log(token)
+        // next()
+    }catch(err){
+        // console.log(err)
+        return err
+        
+    }
+}
     
 
 
-module.exports = {makeItem,putObject,uploadFiles,summariseData,mkAuth,generateToken,makeCart}
+module.exports = {makeItem,putObject,uploadFiles,summariseData,mkAuth,generateToken,makeCart,authGoogle}

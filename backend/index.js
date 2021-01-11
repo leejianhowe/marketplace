@@ -34,8 +34,7 @@ const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_KEY);
 
 // modules
-const {makeItem,putObject,uploadFiles,summariseData,mkAuth,generateToken,makeCart} = require('./modules')
-const { session } = require('passport')
+const {makeItem,putObject,uploadFiles,summariseData,mkAuth,generateToken,makeCart,authGoogle} = require('./modules')
 
 
 // configure local stratgey
@@ -44,11 +43,13 @@ passport.use(
         { usernameField: 'username', passwordField: 'password',session:false },
         ( user, password, done) => {
             // perform the authentication
+            let role = 0
             console.info(`LocalStrategy> username: ${user}, password: ${password}`)
             client.db(MONGO_DB).collection(MONGO_COL_USERS).findOne({
                 user: user
             }).then(result=>{
                 console.log('result from mongo',result)
+                role = result.role
                 if(result != null)
                     return bcrypt.compare(password,result.password)
                 throw new Error('Incorrect login details')  
@@ -58,7 +59,8 @@ passport.use(
                 if(result){
                     done(null, {
                         username: user,
-                        loginTime: (new Date()).toString()
+                        loginTime: (new Date()).toString(),
+                        role: role
                     })
                 }else{
                     throw new Error('Incorrect login details')  
@@ -107,7 +109,7 @@ const checkAuth = (req, resp, next) => {
 
 // ENV constants/ variables
 const TOKEN_SECRET = process.env.TOKEN_SECRET || 'secret'
-
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const PORT = parseInt(process.argv[2]) || parseInt(process.env.PORT) || 3000
 const maxSize = 5 * 1000 * 1000 // 5mb 
 const upload = multer({dest:'uploads/',limits: { fileSize: maxSize }})
@@ -135,6 +137,63 @@ app.use(express.json())
 app.use(passport.initialize());
 // app.use(login)
 
+app.post('/signup/google',(req,res)=>{
+    const idToken = req.body.idToken
+    console.log(idToken)
+    let email
+    authGoogle(idToken,oauthClient,GOOGLE_CLIENT_ID)
+        .then(res=>{
+            console.log('userDetails',res)
+            email = res.email
+            return client.db(MONGO_DB).collection(MONGO_COL_USERS).findOne({user:email})
+        })
+        .then(data=>{
+            console.log('mongo result',data)
+            if(data!=null){
+                const user = {
+                    username: email,
+                    loginTime: (new Date()).toString(),
+                    role: 0
+                }
+                console.log('user info',user)
+                // generate JWT token
+                const token = generateToken(jwt,user,TOKEN_SECRET)
+                res.status(200)
+                res.type('application/json')
+                res.json({ message: `Login in at ${new Date()}`, token,role:user.role })
+            } else {
+                client.db(MONGO_DB).collection(MONGO_COL_USERS).insertOne({user:email,role:0}).then(data=>{
+                    const user = {
+                        username: email,
+                        loginTime: (new Date()).toString(),
+                        role: 0
+                    }
+                    console.log('user info',user)
+                    // generate JWT token
+                    const token = generateToken(jwt,user,TOKEN_SECRET)
+                    res.status(200)
+                    res.type('application/json')
+                    res.json({ message: `Login in at ${new Date()}`, token,role:user.role })
+                })
+            }
+        })
+        .catch(e=>{
+            console.log(e)
+            res.status(400);
+            res.json({
+                error: {
+                message: e.message,
+                }
+            });
+        })
+
+
+})
+
+app.post('/login/google',async (req,res)=>{
+    
+})
+
 app.post('/login',mkAuth(passport),(req,res)=>{
     const user = req.user
     console.log('user info',user)
@@ -142,7 +201,7 @@ app.post('/login',mkAuth(passport),(req,res)=>{
     const token = generateToken(jwt,user,TOKEN_SECRET)
     res.status(200)
     res.type('application/json')
-    res.json({ message: `Login in at ${new Date()}`, token })
+    res.json({ message: `Login in at ${new Date()}`, token,role:user.role })
 
 })
 
@@ -168,11 +227,12 @@ app.post('/signup', async (req,res)=>{
                 })    
             }else{
                 const hash = await bcrypt.hash(password,saltRounds)
-                const isRegistered = await client.db(MONGO_DB).collection(MONGO_COL_USERS).insertOne({user:username,password:hash})
+                const isRegistered = await client.db(MONGO_DB).collection(MONGO_COL_USERS).insertOne({user:username,password:hash,role:0})
                 console.log(isRegistered.insertedCount)
                 const user = {
                     username: username,
-                    loginTime: (new Date()).toString()
+                    loginTime: (new Date()).toString(),
+                    
                 }
                 const token = generateToken(jwt,user,TOKEN_SECRET)
                 res.status(201)
@@ -192,28 +252,31 @@ app.get('/check-session',async (req,res)=>{
     console.log('status',status)
     if(status=='success'){
         await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).findOneAndUpdate({session_id:session_id,payment_status:'unpaid'},{$set:{payment_status:'paid'}})
-        const result = await client.db(MONGO_DB).collection(MONGO_COL_SESSIONS).findOne({session_id:session_id})
-        console.log(result)
-        const token = result['token']
+        const session = await client.db(MONGO_DB).collection(MONGO_COL_SESSIONS).findOne({session_id:session_id})
+        console.log(session)
+        const token = session['token']
         res.status(200)
         res.type('application/json')
         res.json({token})
 
         
     } else {
-        await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).findOneAndUpdate({session_id:session_id,payment_status:'unpaid'},{$set:{payment_status:'failed'}})
-        const result = await client.db(MONGO_DB).collection(MONGO_COL_SESSIONS).findOne({session_id:session_id})
+        const order = await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).findOne({session_id:session_id,payment_status:'unpaid'})
+        const session = await client.db(MONGO_DB).collection(MONGO_COL_SESSIONS).findOne({session_id:session_id})
+        console.log('order',order)
+        console.log('session',session)
+        const token = session['token']
+        const orderItems = session['order']
         res.status(200)
         res.type('application/json')
-        res.json({token})
+        res.json({token,orderItems})
     }
-    res.end()
 
 })
 
 
 // check if request has valid token before access
-app.use(checkAuth)
+// app.use(checkAuth)
 
 app.post("/create-checkout-session", async (req, res) => {
     const cart = req.body.cart;
@@ -231,18 +294,18 @@ app.post("/create-checkout-session", async (req, res) => {
             line_items: line_items,
             client_reference_id:user,
             customer_email:user,
-            success_url: 'http://localhost:4200/#/success?session_id={CHECKOUT_SESSION_ID}&status=success',
-            cancel_url: 'http://localhost:4200/#/failure?session_id={CHECKOUT_SESSION_ID}&status=fail',
+            success_url: 'http://localhost:4200/#/payment-status?session_id={CHECKOUT_SESSION_ID}&status=success',
+            cancel_url: 'http://localhost:4200/#/payment-status?session_id={CHECKOUT_SESSION_ID}&status=fail',
         });
         console.log('session',session)
         const order = await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).insertOne({user:user,session_id:session.id,payment_status:session.payment_status,order:cart})
         const saveSession = await client.db(MONGO_DB).collection(MONGO_COL_SESSIONS).insertOne({user:user,session_id:session.id,token:req.encodedToken})
-        Promise.all([session,order,saveSession]).then(()=>{
-            // console.log(order)
-            res.json({
-                sessionId: session.id,
-            });
-        })
+        
+        // console.log(order)
+        res.json({
+            sessionId: session.id,
+        });
+        
     } catch (e) {
         console.log(e)
         res.status(400);
@@ -335,11 +398,10 @@ client.connect().then(()=>{
     })
 })
 
-// oauth2.0
-// const passport = require('passport')
+// // oauth2.0
 // const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 
-// authenticate with google
+// // authenticate with google
 // passport.use(new GoogleStrategy({
 //     clientID: process.env.GOOGLE_CLIENT_ID,
 //     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -351,29 +413,7 @@ client.connect().then(()=>{
 // ));
 
 
-// const login = async (req, res, next) => {
-//     try{
-//         console.log(req.headers['x-token'])
-//         const ticket = await oauthClient.verifyIdToken({
-//             idToken: req.headers['x-token'],
-//             audience: process.env.GOOGLE_CLIENT_ID
-//         });
-//         const payload = ticket.getPayload();
-//         const userDetails = {
-//             email: payload['email'],
-//             firstname: payload['given_name'],
-//             lastname: payload['family_name']
-//         }
-//         let token = jwt.sign({data:userDetails}, process.env.GOOGLE_CLIENT_SECRET, {
-//             expiresIn: 900 // 15mins
-//         })
-//         req.token = token
-//         console.log(token)
-//         next()
-//     }catch(err){
-//         console.log(err)
-//     }
-// }
+
 
 // app.get('/auth/google',
 //     passport.authenticate('google',{scope:['email','profile']})

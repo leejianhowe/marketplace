@@ -29,10 +29,23 @@ export class SignupComponent implements OnInit {
 
   ngOnInit() {}
 
-  async loginGoogle() {
-    // await this.authService.signInWithGoogle();
-    await this.router.navigate(['/']);
-  }
+  async signupGoogle() {
+    try{
+    const results = await this.authService.signInWithGoogle();
+    console.log(results)
+    const idToken = results['idToken']
+    const result = await this.authService.signupGoogle(idToken)
+    console.log(result)
+    // if(result.body.stat)
+    this.authService.token = result.body['token'];
+    this.authService.role = result.body['role']
+    this.authService.hasToken.emit(true);
+    this.authService.hasRole.emit(this.authService.role);
+    this.router.navigate(['/']);
+    }catch(err){
+      console.log(err)
+    }
+}
 
   signIn() {
     const data = this.form.value;
@@ -48,6 +61,7 @@ export class SignupComponent implements OnInit {
           console.log(res);
           if (res.status === 201) {
             this.authService.token = res.body['token'];
+            this.authService.role = res.body['role']
             console.log(this.authService.token)
             this.authService.hasToken.emit(true);
           }

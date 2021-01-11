@@ -2,10 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import {PaymentService} from '../../shared/payment.service'
 @Component({
   selector: 'app-subscribe',
-  templateUrl: './subscribe.component.html',
-  styleUrls: ['./subscribe.component.css']
+  templateUrl: './landing.component.html',
+  styleUrls: ['./landing.component.css']
 })
-export class SubscribeComponent implements OnInit {
+export class LandingComponent implements OnInit {
   constructor(private paymentService:PaymentService) { }
 
   ngOnInit(): void {
