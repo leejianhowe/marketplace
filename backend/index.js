@@ -34,8 +34,8 @@ const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_KEY);
 
 // modules
-const {makeSession,makeOrder,makeItem,putObject,uploadFiles,summariseData,mkAuth,generateToken,makeCart,authGoogle} = require('./modules')
-
+const {bulkDelete,makeSession,makeOrder,makeItem,putObject,uploadFiles,summariseData,makeCart} = require('./modules')
+const {generateToken,mkAuth,authGoogle,generateUserInfo} = require('./auth.modules')
 
 // configure local stratgey
 passport.use(
@@ -44,14 +44,20 @@ passport.use(
         ( user, password, done) => {
             // perform the authentication
             let role = 0
+            let name
+            let picture
             console.info(`LocalStrategy> username: ${user}, password: ${password}`)
             client.db(MONGO_DB).collection(MONGO_COL_USERS).findOne({
-                user: user
+                username: user
             }).then(result=>{
                 console.log('result from mongo',result)
-                role = result.role
-                if(result != null)
+                
+                if(result != null){
+                    name = result['name']
+                    picture = result['picture']
+                    role = result['role']
                     return bcrypt.compare(password,result.password)
+                }
                 throw new Error('Incorrect login details')  
             })
             .then((result) => {
@@ -59,7 +65,8 @@ passport.use(
                 if(result){
                     done(null, {
                         username: user,
-                        loginTime: (new Date()).toString(),
+                        name,
+                        picture,
                         role: role
                     })
                 }else{
@@ -137,85 +144,109 @@ app.use(express.json())
 app.use(passport.initialize());
 // app.use(login)
 
-app.post('/signup/google',(req,res)=>{
+
+app.post('/signup/google',async (req,res)=>{
     const idToken = req.body.idToken
     console.log(idToken)
     let email
-    authGoogle(idToken,oauthClient,GOOGLE_CLIENT_ID)
-        .then(res=>{
-            console.log('userDetails',res)
-            email = res.email
-            return client.db(MONGO_DB).collection(MONGO_COL_USERS).findOne({user:email})
-            
-        })
-        .then(data=>{
-            console.log('mongo result',data)
-            if(data!=null){
-                const user = {
-                    username: email,
-                    loginTime: (new Date()).toString(),
-                    role: 0
-                }
-                console.log('user info',user)
-                // generate JWT token
-                const token = generateToken(jwt,user,TOKEN_SECRET)
-                res.status(200)
-                res.type('application/json')
-                res.json({ message: `Login in at ${new Date()}`, token,role:user.role })
-            } else {
-                client.db(MONGO_DB).collection(MONGO_COL_USERS).insertOne({user:email,role:0}).then(data=>{
-                    const user = {
-                        username: email,
-                        loginTime: (new Date()).toString(),
-                        role: 0
-                    }
-                    console.log('user info',user)
-                    // generate JWT token
-                    const token = generateToken(jwt,user,TOKEN_SECRET)
-                    res.status(200)
-                    res.type('application/json')
-                    res.json({ message: `Login in at ${new Date()}`, token,role:user.role })
-                })
+    let name
+    let picture
+    let userInfo
+    try{
+        const authResult = await authGoogle(idToken,oauthClient,GOOGLE_CLIENT_ID)
+        console.log('userDetails',authResult)
+        email = authResult.email
+        name = authResult.firstname + ' ' + authResult.lastname
+        picture = authResult.picture
+        const data = await client.db(MONGO_DB).collection(MONGO_COL_USERS).findOne({username:email})
+        console.log('mongo result',data)
+        // generate JWT token
+        userInfo = generateUserInfo(email,name,0,picture)
+        console.log('user info',userInfo)
+        if(data==null){
+           const insertUser = await client.db(MONGO_DB).collection(MONGO_COL_USERS).insertOne(userInfo)
+           console.log('new user',insertUser)   
+        }
+        const token = generateToken(jwt,userInfo,TOKEN_SECRET)
+        res.status(200)
+        res.type('application/json')
+        res.json({ message: `Login in at ${new Date()}`, token,role:0 })
+    } catch (err) {
+        console.log(err)
+        res.status(400);
+        res.json({
+            error: {
+            message: err.message,
             }
         })
-        .catch(e=>{
-            console.log(e)
-            res.status(400);
-            res.json({
-                error: {
-                message: e.message,
-                }
-            });
-        })
+    }
+    // authGoogle(idToken,oauthClient,GOOGLE_CLIENT_ID)
+    //     .then(res=>{
+    //         console.log('userDetails',res)
+    //         email = res.email
+    //         name = res.firstname + ' ' + res.lastname
+    //         picture = res.picture
+    //         return client.db(MONGO_DB).collection(MONGO_COL_USERS).findOne({user:email})
+            
+    //     })
+    //     .then(data=>{
+    //         console.log('mongo result',data)
+    //         userInfo = generateUserInfo(email,name,data.role)
+    //         if(data!=null){
+    //             console.log('user info',userInfo)
+    //             // generate JWT token
+    //             const token = generateToken(jwt,userInfo,TOKEN_SECRET)
+    //             res.status(200)
+    //             res.type('application/json')
+    //             res.json({ message: `Login in at ${new Date()}`, token,role:data.role })
+    //         } else {
+    //             client.db(MONGO_DB).collection(MONGO_COL_USERS).insertOne(userInfo).then(data=>{
+    //                 console.log('new user',data)
+    //                 const user = {
+    //                     username: email,
+    //                     name,
+    //                     loginTime: (new Date()).toString(),
+    //                     role: 0
+    //                 }
+    //                 console.log('user info',user)
+    //                 // generate JWT token
+    //                 const token = generateToken(jwt,user,TOKEN_SECRET)
+    //                 res.status(200)
+    //                 res.type('application/json')
+    //                 res.json({ message: `Login in at ${new Date()}`, token,role:user.role })
+    //             })
+    //         }
+    //     })
+    //     .catch(e=>{
+            
+    //     })
 
 
 })
 
 app.post('/login/google',async (req,res)=>{
 
+    const idToken = req.body.idToken
+    console.log('idToken',idToken)
     try{
-        const idToken = req.body.idToken
-        console.log('idToken',idToken)
         const googleResult = await authGoogle(idToken,oauthClient,GOOGLE_CLIENT_ID)
         console.log('userDetails',googleResult)
         const email = googleResult.email
-        const mongoResult = await client.db(MONGO_DB).collection(MONGO_COL_USERS).findOne({user:email})
+        const name = googleResult.firstname + ' ' +googleResult.lastname
+        const picture = googleResult.picture
+        const mongoResult = await client.db(MONGO_DB).collection(MONGO_COL_USERS).findOne({username:email})
         if (mongoResult != null) {
-            const user = {
-                username: email,
-                loginTime: (new Date()).toString(),
-                role: 0
-            }
-            console.log('user info',user)
+            const userInfo = generateUserInfo(email,name,0,picture)
+            console.log('user info',userInfo)
             // generate JWT token
-            const token = generateToken(jwt,user,TOKEN_SECRET)
+            const token = generateToken(jwt,userInfo,TOKEN_SECRET)
             res.status(200)
             res.type('application/json')
             res.json({ message: `Login in at ${new Date()}`, token,role:user.role })
         } else {
             res.status(400)
             res.type('application/json')
-            res.json({message:'user not found'})
+            res.json({error:{message:'user not found'}})
         }
     } catch(err) {
         console.log(err)
@@ -243,8 +274,10 @@ app.post('/login',mkAuth(passport),(req,res)=>{
 
 app.post('/signup', async (req,res)=>{
     const username = req.body.username
-    const password = (req.body.password).toString()
-    const password1 = (req.body.password1).toString()
+    const name = (req.body.name).trim()
+    const password = (req.body.password).trim().toString()
+    const password1 = (req.body.password1).trim().toString()
+    const picture = `https://ui-avatars.com/api/?name=${name}`
     if(password1!=password){
         res.status(400)
         res.type('application/json')        
@@ -254,29 +287,30 @@ app.post('/signup', async (req,res)=>{
     }
     else {
         try{
-            const isFound = await client.db(MONGO_DB).collection(MONGO_COL_USERS).findOne({user:username})
+            const isFound = await client.db(MONGO_DB).collection(MONGO_COL_USERS).findOne({username:username})
             if(isFound !=null){
                 res.status(400)
                 res.type('application/json')
                 res.json({
-                    message: 'Username exists'
+                    message: 'Email exists'
                 })    
-            }else{
+            } else {
                 const hash = await bcrypt.hash(password,saltRounds)
-                const isRegistered = await client.db(MONGO_DB).collection(MONGO_COL_USERS).insertOne({user:username,password:hash,role:0})
-                console.log(isRegistered.insertedCount)
-                const user = {
-                    username: username,
-                    loginTime: (new Date()).toString(),
-                    
-                }
+                const isRegistered = await client.db(MONGO_DB).collection(MONGO_COL_USERS).insertOne({username:username,password:hash,role:0,picture:picture,name:name},{ writeConcern: { w: 'majority' }})
+                console.log('isRegistered',isRegistered.insertedCount)
+                const user = generateUserInfo(username,name,0,picture)
                 const token = generateToken(jwt,user,TOKEN_SECRET)
                 res.status(201)
                 res.type('application/json')
-                res.json({message:'User registered',token})
+                res.json({message:'User registered',token,role:user.role})
             }
         }catch(err){
             console.log(err)
+            res.status(400)
+            res.type('application/json')        
+            res.json({
+                message: err.message
+            })
         }
     }
 })
@@ -323,10 +357,10 @@ app.use(checkAuth)
 
 app.get('/myorders',async (req,res)=>{
     // const user = req.token.sub
-    const user = 'lewis@gmail.com'
+    const user = 'fred@gmail.com'
     try{
         const orders = await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).aggregate([
-            {$match:{user:'jianhowe@gmail.com'}},
+            {$match:{user:user}},
             { $sort : { payment_status:1,timestamp : -1 } },
             {$project:{_id:false,payment_status:true,order:true,timestamp:true}}
         ]).toArray()
@@ -353,6 +387,7 @@ app.post("/create-checkout-session", async (req, res) => {
     const line_items = makeCart(cart)
     console.log(line_items)
     const token = req.encodedToken
+    const sessionMongo = client.startSession();
     // See https://stripe.com/docs/api/checkout/sessions/create
     // for additional parameters to pass.
     try {
@@ -390,7 +425,7 @@ app.post("/create-checkout-session", async (req, res) => {
 
 app.get('/items',async (req,res)=>{
     const results = await client.db(MONGO_DB).collection(MONGO_COL).find().toArray()
-    console.log(results)
+    // console.log(results)
     const data = summariseData(results)
     res.status(200).type('application/json').json(data)
 
@@ -444,6 +479,7 @@ app.post('/item', upload.array('images',5), (req,res)=>{
                 res.status(200).type('application/json').json({message:"sucesss",insertId:data.insertedId})
             })
             .catch(err=>{
+                bulkDelete(files,s3)
                 console.log('error',err)
                 res.status(500).type('application/json').json(err)
             })

@@ -31,6 +31,26 @@ const putObject = (file, s3, data) => {
     })
 }
 
+const bulkDelete = (file,s3) =>{
+    const deleteObjs = file.map(ele=>{
+        return {
+            Key: ele.filename
+        }
+    })
+    // console.log(deleteObjs)
+    const params = {
+        Bucket: "marketplacesg", 
+        Delete: {
+            Objects: deleteObjs, 
+            Quiet: false
+        }
+       }
+       s3.deleteObjects(params, function(err, data) {
+            if (err) console.log(err); // an error occurred
+            else     console.log(data);           // successful response
+       });
+}
+
 const uploadFiles = (file,fs) => {
 
     return new Promise((res, rej) => {
@@ -53,47 +73,13 @@ const summariseData = (results)=>results.map(ele=>{
     }
 })
 
-const mkAuth = (passport) => {
-    return (req, resp, next) => {
-        passport.authenticate('local',
-            (err, user, info) => {
-                if ((null != err) || (!user)) {
-                    console.log('err in mkAuth',err)
-                    console.log(user)
-                    resp.status(401)
-                    resp.type('application/json')
-                    resp.json({ error: err })
-                    return
-                }
-                // attach user to the request object
-                req.user = user
-                next()
-            }
-        )(req, resp, next)
-    }
-}
-
-const generateToken = (jwt,user,TOKEN_SECRET)=>{
-    const timestamp = (new Date()).getTime() / 1000
-    
-    return jwt.sign({
-        sub: user.username,
-        iss: 'marketplace',
-        iat: timestamp,
-        exp: timestamp + (60 * 15), //expire in 15mins
-        data: {
-            loginTime: user.loginTime
-        }
-    }, TOKEN_SECRET)
-}
-
 const makeCart = (cart) => cart.map(ele=>{
     const item ={
         price_data:{
             currency: 'sgd',
             product_data: {
             name: ele.title,
-            images: ['https://i.imgur.com/EHyR2nP.png'],
+            // images: ['https://i.imgur.com/EHyR2nP.png'],
             },
             unit_amount: parseInt(ele.price*100),
         },
@@ -103,32 +89,6 @@ const makeCart = (cart) => cart.map(ele=>{
     return item
 
 })
-
-const authGoogle = async (idToken,oauthClient,GOOGLE_CLIENT_ID) => {
-    try{
-        const ticket = await oauthClient.verifyIdToken({
-            idToken: idToken,
-            audience: GOOGLE_CLIENT_ID
-        });
-        const payload = ticket.getPayload();
-        const userDetails = {
-            email: payload['email'],
-            firstname: payload['given_name'],
-            lastname: payload['family_name']
-        }
-        return userDetails
-        // let token = jwt.sign({data:userDetails}, process.env.GOOGLE_CLIENT_SECRET, {
-        //     expiresIn: 900 // 15mins
-        // })
-        // req.token = token
-        // console.log(token)
-        // next()
-    }catch(err){
-        // console.log(err)
-        return err
-        
-    }
-}
 
 const makeOrder = (user,session,cart)=>{
     return {
@@ -148,7 +108,7 @@ const makeSession = (user,session,token)=>{
         timestamp:new Date()
     }
 }
-    
 
 
-module.exports = {makeSession,makeOrder,makeItem,putObject,uploadFiles,summariseData,mkAuth,generateToken,makeCart,authGoogle}
+
+module.exports = {bulkDelete,makeSession,makeOrder,makeItem,putObject,uploadFiles,summariseData,makeCart}

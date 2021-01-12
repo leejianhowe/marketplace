@@ -24,6 +24,7 @@ export class SignupComponent implements OnInit {
       username: this.fb.control('', [Validators.required, Validators.email]),
       password: this.fb.control('', [Validators.required]),
       password1: this.fb.control('', [Validators.required]),
+      name: this.fb.control('', [Validators.required]),
     });
   }
 
@@ -61,6 +62,7 @@ export class SignupComponent implements OnInit {
         .then((res) => {
           console.log(res);
           if (res.status === 201) {
+            alert(res['body']['message'])
             this.authService.token = res.body['token'];
             this.authService.role = res.body['role']
             console.log(this.authService.token)
