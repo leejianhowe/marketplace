@@ -19,16 +19,24 @@ export class PaymentStatusComponent implements OnInit {
     if(this.status == 'success')
     {
       this.isSuccess = true
+      this.cartService.cart = []
+      this.paymentService.checkSession(this.session_id,this.status).then(res=>{
+        console.log(res)
+        this.authService.token = res['token']
+        this.authService.hasToken.emit(true)
+      })
+    } else {
+      this.paymentService.checkSession(this.session_id,this.status).then(res=>{
+        console.log(res)
+        this.authService.token = res['token']
+        this.authService.hasToken.emit(true)
+        this.cartService.cart = res['orderItems']
+  
+      })
     }
     console.log('sessiond_id',this.session_id)
     console.log('status',this.status)
-    this.paymentService.checkSession(this.session_id,this.status).then(res=>{
-      console.log(res)
-      this.authService.token = res['token']
-      this.authService.hasToken.emit(true)
-      this.cartService.cart = res['orderItems']
-
-    })
+    
   }
 
 }

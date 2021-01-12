@@ -27,10 +27,10 @@ export class PostItemComponent implements OnInit {
       title: this.fb.control('', [Validators.required]),
       category: this.fb.control('',[Validators.required]),
       price: this.fb.control('',[Validators.required]),
-      condition: this.fb.control('',[Validators.required]),
+      // condition: this.fb.control('',[Validators.required]),
       description: this.fb.control(''),
-      dealMethod: this.fb.control('',[Validators.required]),
-      paymentMethod: this.fb.control('',[Validators.required]),
+      // dealMethod: this.fb.control('',[Validators.required]),
+      // paymentMethod: this.fb.control('',[Validators.required]),
       images: this.fb.control('',[Validators.required]),
     });
   }
@@ -49,10 +49,10 @@ export class PostItemComponent implements OnInit {
       data.append('title', this.form.value.title);
       data.append('category', this.form.value.category);
       data.append('price', this.form.value.price);
-      data.append('condition', this.form.value.condition);
+      // data.append('condition', this.form.value.condition);
       data.append('description', this.form.value.description);
-      data.append('dealMethod', this.form.value.dealMethod);
-      data.append('paymentMethod', this.form.value.paymentMethod);
+      // data.append('dealMethod', this.form.value.dealMethod);
+      // data.append('paymentMethod', this.form.value.paymentMethod);
       const results = this.databaseService.postItem(data);
       results.subscribe(
         (res) => {

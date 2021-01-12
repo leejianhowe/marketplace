@@ -1,0 +1,51 @@
+<div class="container">
+<table class="table">
+    <thead>
+        <th>#</th>
+        <th>Payment Status</th>
+            <th>
+                <div class="table-borderless">
+                    <col width="100px" />
+                        <col width="70px" />
+                        <col width="70px" />
+            <td colspan="">Item</td>
+            <td colspan="">Qty</td>
+            <td colspan="">Price</td>
+        </div>
+    </th>
+        <th>Order Date</th>
+    </thead>
+    <tbody>
+        <tr *ngFor="let order of orders; let index=index">
+            <td>{{index+1}}</td>
+            <td>{{order.payment_status | uppercase}}</td>
+
+            <!-- <td > -->
+                <!-- <table class="table table-bordered"> -->
+                  
+                   
+                    <!-- <tbody> -->
+                    <div *ngFor="let item of order.order">
+                        <col width="100px" />
+                        <col width="70px" />
+                        <col width="70px" />
+                        <tbody>
+                        <td colspan="2">
+                            {{item.title}}
+                        </td>
+                        <td colspan="2">
+                            {{item.qty}}
+                        </td>
+                        <td colspan="2">
+                            {{item.price* item.qty}}
+                        </td>
+                    </tbody>
+                    </div>
+                <!-- </tbody>
+                </table>
+            </td> -->
+            <td>{{order.timestamp | date}}</td>
+        </tr>
+    </tbody>
+</table>
+</div>

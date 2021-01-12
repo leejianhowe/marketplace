@@ -9,7 +9,7 @@ import { SignupComponent } from './components/signup/signup.component';
 import { LandingComponent } from './components/landing/landing.component';
 import {CartComponent} from './components/cart/cart.component'
 import {PaymentStatusComponent} from './components/payment-status/payment-status.component'
-// import {FailureComponent} from './components/failure/failure.component'
+import { AccountComponent } from './components/account/account.component';
 
 const routes: Routes = [
   {path:'',component:LandingComponent},
@@ -18,7 +18,7 @@ const routes: Routes = [
   {path:'signup',component:SignupComponent},
   {path:'cart',component:CartComponent},
   {path:'payment-status',component:PaymentStatusComponent},
-  // {path:'failure',component:FailureComponent},
+  {path:'account',component:AccountComponent},
   {path:'sell',component:PostItemComponent},
   // {path:'subscribe',component:SubscribeComponent},
   {path:'categories/:category',component:SearchItemsComponent},

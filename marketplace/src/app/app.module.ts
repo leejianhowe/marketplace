@@ -24,7 +24,7 @@ import { LandingComponent } from './components/landing/landing.component';
 import { SignupComponent } from './components/signup/signup.component';
 import { CartComponent } from './components/cart/cart.component';
 import { PaymentStatusComponent } from './components/payment-status/payment-status.component';
-import { FailureComponent } from './components/failure/failure.component';
+import { AccountComponent } from './components/account/account.component';
 
 
 @NgModule({
@@ -40,7 +40,7 @@ import { FailureComponent } from './components/failure/failure.component';
     SignupComponent,
     CartComponent,
     PaymentStatusComponent,
-    FailureComponent,
+    AccountComponent,
   ],
   imports: [
     BrowserModule,

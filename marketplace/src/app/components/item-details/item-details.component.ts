@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { DatabaseService } from 'src/app/shared/database.service';
-import { dealMethod, paymentMethod, condition, Category, ItemDetails } from 'src/app/shared/model';
+import { ItemDetails } from 'src/app/shared/model';
 import {CartItemsDetail} from '../../shared/model'
 import {CartService} from '../../shared/cart.service'
 @Component({

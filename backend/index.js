@@ -34,7 +34,7 @@ const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_KEY);
 
 // modules
-const {makeItem,putObject,uploadFiles,summariseData,mkAuth,generateToken,makeCart,authGoogle} = require('./modules')
+const {makeSession,makeOrder,makeItem,putObject,uploadFiles,summariseData,mkAuth,generateToken,makeCart,authGoogle} = require('./modules')
 
 
 // configure local stratgey
@@ -146,6 +146,7 @@ app.post('/signup/google',(req,res)=>{
             console.log('userDetails',res)
             email = res.email
             return client.db(MONGO_DB).collection(MONGO_COL_USERS).findOne({user:email})
+            
         })
         .then(data=>{
             console.log('mongo result',data)
@@ -191,7 +192,42 @@ app.post('/signup/google',(req,res)=>{
 })
 
 app.post('/login/google',async (req,res)=>{
-    
+
+    try{
+        const idToken = req.body.idToken
+        console.log('idToken',idToken)
+        const googleResult = await authGoogle(idToken,oauthClient,GOOGLE_CLIENT_ID)
+        console.log('userDetails',googleResult)
+        const email = googleResult.email
+        const mongoResult = await client.db(MONGO_DB).collection(MONGO_COL_USERS).findOne({user:email})
+        if (mongoResult != null) {
+            const user = {
+                username: email,
+                loginTime: (new Date()).toString(),
+                role: 0
+            }
+            console.log('user info',user)
+            // generate JWT token
+            const token = generateToken(jwt,user,TOKEN_SECRET)
+            res.status(200)
+            res.type('application/json')
+            res.json({ message: `Login in at ${new Date()}`, token,role:user.role })
+        } else {
+            res.status(400)
+            res.type('application/json')
+            res.json({message:'user not found'})
+        }
+    } catch(err) {
+        console.log(err)
+        res.status(400)
+        res.type('application/json')
+        res.json({
+            error: {
+            message: err.message,
+            }
+        })
+
+    }
 })
 
 app.post('/login',mkAuth(passport),(req,res)=>{
@@ -250,41 +286,73 @@ app.get('/check-session',async (req,res)=>{
     const status = req.query.status
     console.log('session_id',session_id)
     console.log('status',status)
-    if(status=='success'){
-        await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).findOneAndUpdate({session_id:session_id,payment_status:'unpaid'},{$set:{payment_status:'paid'}})
-        const session = await client.db(MONGO_DB).collection(MONGO_COL_SESSIONS).findOne({session_id:session_id})
-        console.log(session)
-        const token = session['token']
-        res.status(200)
-        res.type('application/json')
-        res.json({token})
+    try{
+        if(status=='success'){
+            await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).findOneAndUpdate({session_id:session_id,payment_status:'unpaid'},{$set:{payment_status:'paid'}})
+            const session = await client.db(MONGO_DB).collection(MONGO_COL_SESSIONS).findOne({session_id:session_id})
+            console.log(session)
+            const token = session['token']
+            res.status(200)
+            res.type('application/json')
+            res.json({token})
 
-        
-    } else {
-        const order = await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).findOne({session_id:session_id,payment_status:'unpaid'})
-        const session = await client.db(MONGO_DB).collection(MONGO_COL_SESSIONS).findOne({session_id:session_id})
-        console.log('order',order)
-        console.log('session',session)
-        const token = session['token']
-        const orderItems = session['order']
-        res.status(200)
+            
+        } else {
+            const order = await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).findOne({session_id:session_id,payment_status:'unpaid'})
+            const session = await client.db(MONGO_DB).collection(MONGO_COL_SESSIONS).findOne({session_id:session_id})
+            console.log('order',order)
+            console.log('session',session)
+            const token = session['token']
+            const orderItems = order['order']
+            res.status(200)
+            res.type('application/json')
+            res.json({token,orderItems})
+        }
+    } catch (err) {
+        console.log(err)
+        res.status(400)
         res.type('application/json')
-        res.json({token,orderItems})
+        res.json({error:{message:err.message}})
     }
 
 })
 
 
 // check if request has valid token before access
-// app.use(checkAuth)
+app.use(checkAuth)
+
+app.get('/myorders',async (req,res)=>{
+    // const user = req.token.sub
+    const user = 'lewis@gmail.com'
+    try{
+        const orders = await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).aggregate([
+            {$match:{user:'jianhowe@gmail.com'}},
+            { $sort : { payment_status:1,timestamp : -1 } },
+            {$project:{_id:false,payment_status:true,order:true,timestamp:true}}
+        ]).toArray()
+        console.log(orders)
+        res.status(200)
+        res.type('application/json')
+        res.json({orders})
+        
+    } catch(err){
+        res.status(400)
+        res.type('application/json')
+        res.json({error:err.message})
+
+    }
+
+})
 
 app.post("/create-checkout-session", async (req, res) => {
     const cart = req.body.cart;
+    
     const user = req.token.sub
     console.log('user',user)
     console.log('cart recived',cart)
     const line_items = makeCart(cart)
     console.log(line_items)
+    const token = req.encodedToken
     // See https://stripe.com/docs/api/checkout/sessions/create
     // for additional parameters to pass.
     try {
@@ -298,10 +366,11 @@ app.post("/create-checkout-session", async (req, res) => {
             cancel_url: 'http://localhost:4200/#/payment-status?session_id={CHECKOUT_SESSION_ID}&status=fail',
         });
         console.log('session',session)
-        const order = await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).insertOne({user:user,session_id:session.id,payment_status:session.payment_status,order:cart})
-        const saveSession = await client.db(MONGO_DB).collection(MONGO_COL_SESSIONS).insertOne({user:user,session_id:session.id,token:req.encodedToken})
-        
-        // console.log(order)
+        const order = makeOrder(user,session,cart)
+        const sessionData = makeSession(user,session,token)
+        await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).insertOne(order)
+        await client.db(MONGO_DB).collection(MONGO_COL_SESSIONS).insertOne(sessionData)
+        // console.log(insertResult)
         res.json({
             sessionId: session.id,
         });
@@ -315,7 +384,7 @@ app.post("/create-checkout-session", async (req, res) => {
             }
         });
     }
-  });
+});
 
 
 

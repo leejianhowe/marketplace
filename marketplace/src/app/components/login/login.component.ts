@@ -28,11 +28,20 @@ export class LoginComponent implements OnInit {
   ngOnInit() {}
 
   async loginGoogle() {
-    const results = await this.authService.signInWithGoogle();
-    console.log(results)
-    const idToken = results['idToken']
-    await this.authService.getToken(idToken)
-    // await this.router.navigate(['/']);
+    try{
+      const results = await this.authService.signInWithGoogle();
+      console.log(results)
+      const idToken = results['idToken']
+      const result = await this.authService.signinGoogle(idToken)
+      console.log(result)
+      if(result.status == 200) {
+        this.makeToken(result.body)
+        this.router.navigate(['/main']);
+      }
+    } catch (err) {
+      console.log(err)
+      this.errorMessage = err.error.error.message
+    }
   }
 
   login() {
@@ -42,18 +51,22 @@ export class LoginComponent implements OnInit {
       console.log(res)
       if(res.status === 200)
       {
-        this.authService.token = res.body['token']
-        this.authService.role = res.body['role']
-        console.log(this.authService)
-        this.authService.hasToken.emit(true)
-        this.authService.hasRole.emit(this.authService.role)
+        this.makeToken(res.body)
+        this.router.navigate(['/main'])
       }
-      this.router.navigate(['/main'])
     }).catch(err=>{
       console.log('error',err)
       if(err.status === 401){
         this.errorMessage = err.error.error
       }
     })
+  }
+
+  makeToken(data){
+    this.authService.token = data['token']
+    this.authService.role = data['role']
+    this.authService.hasToken.emit(true)
+    this.authService.hasRole.emit(this.authService.role)
+
   }
 }

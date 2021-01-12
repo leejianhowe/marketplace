@@ -35,4 +35,8 @@ export class DatabaseService{
     return await this.http.get('/api/search',{params}).toPromise()
   }
 
+  async getOrders():Promise<any[]>{
+    return await this.http.get<any[]>('/api/myorders').toPromise()
+  }
+
 }

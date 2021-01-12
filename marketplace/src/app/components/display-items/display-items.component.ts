@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatabaseService } from '../../shared/database.service'
-import { ItemSummary, Category } from '../../shared/model'
+import { ItemSummary } from '../../shared/model'
 @Component({
   selector: 'app-display-items',
   templateUrl: './display-items.component.html',

@@ -36,6 +36,10 @@ export class AuthService {
 
   }
 
+  signinGoogle(idToken){
+    return this.http.post('/api/login/google',{idToken},{observe:'response'}).toPromise()
+  }
+
   // signOut(): void {
   //   this.authService.signOut();
   // }

@@ -3,10 +3,10 @@ const makeItem = (body,files)=>{
         title:body.title,
         category: body.category,
         price: parseFloat(body.price),
-        condition:body.condition,
+        // condition:body.condition,
         description: body.description,
-        dealMethod:body.dealMethod,
-        paymentMethod:body.paymentMethod,
+        // dealMethod:body.dealMethod,
+        // paymentMethod:body.paymentMethod,
         images:files.map((ele)=>ele.filename),
         timestamp: new Date()
 
@@ -129,7 +129,26 @@ const authGoogle = async (idToken,oauthClient,GOOGLE_CLIENT_ID) => {
         
     }
 }
+
+const makeOrder = (user,session,cart)=>{
+    return {
+        user:user,
+        session_id:session.id,
+        payment_status:session.payment_status,
+        order:cart,
+        timestamp: new Date()
+    }
+}
+
+const makeSession = (user,session,token)=>{
+    return{
+        user:user,
+        session_id:session.id,
+        token:token,
+        timestamp:new Date()
+    }
+}
     
 
 
-module.exports = {makeItem,putObject,uploadFiles,summariseData,mkAuth,generateToken,makeCart,authGoogle}
+module.exports = {makeSession,makeOrder,makeItem,putObject,uploadFiles,summariseData,mkAuth,generateToken,makeCart,authGoogle}

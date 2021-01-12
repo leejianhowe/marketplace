@@ -44,10 +44,11 @@ export class SignupComponent implements OnInit {
     this.router.navigate(['/']);
     }catch(err){
       console.log(err)
+      this.errorMessage = err.error.error.message
     }
 }
 
-  signIn() {
+  signUp() {
     const data = this.form.value;
     const password = this.form.get('password').value
     const password1 = this.form.get('password1').value
