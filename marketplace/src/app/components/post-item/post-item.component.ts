@@ -59,7 +59,8 @@ export class PostItemComponent implements OnInit {
           console.log(res);
           this.form.reset()
           console.log(this.images.nativeElement.value)
-          this.router.navigate(['/']);
+          alert('successful upload')
+          this.router.navigate(['/main']);
         }).catch(
         (err) => {
           console.log(err);

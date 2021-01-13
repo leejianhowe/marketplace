@@ -31,12 +31,12 @@ const putObject = (file, s3, data) => {
     })
 }
 
-const bulkDelete = (file,s3) =>{
-    const deleteObjs = file.map(ele=>{
-        return {
-            Key: ele.filename
-        }
-    })
+const bulkDelete = (deleteObjs,s3) =>{
+    // const deleteObjs = file.map(ele=>{
+    //     return {
+    //         Key: ele.filename
+    //     }
+    // })
     // console.log(deleteObjs)
     const params = {
         Bucket: "marketplacesg", 

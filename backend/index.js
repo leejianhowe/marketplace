@@ -1,6 +1,13 @@
+//dotenv config
+const dotenv = require('dotenv');
+dotenv.config();
+
+// node-fetch
+const fetch = require('node-fetch')
 // express morgan
 const express = require('express')
 const morgan = require('morgan')
+const router = express.Router()
 
 // mongo
 const {MongoClient,ObjectId} = require('mongodb')
@@ -33,9 +40,7 @@ const jwt = require('jsonwebtoken')
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_KEY);
 
-//dotenv config
-const dotenv = require('dotenv');
-dotenv.config();
+
 
 // modules
 const {bulkDelete,makeSession,makeOrder,makeItem,putObject,uploadFiles,summariseData,makeCart} = require('./modules')
@@ -124,7 +129,6 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const PORT = parseInt(process.argv[2]) || parseInt(process.env.PORT) || 3000
 const maxSize = 5 * 1000 * 1000 // 5mb 
 const upload = multer({dest:'uploads/',limits: { fileSize: maxSize }})
-const weatherApi = 'api.openweathermap.org/data/2.5/weather?q={city name}&appid={API key}'
 
 const MONGO_DB = 'marketplace'
 const MONGO_COL = 'items'
@@ -149,7 +153,28 @@ app.use(morgan('combined'))
 app.use(express.urlencoded({extended:true}))
 app.use(express.json())
 app.use(passport.initialize());
-// app.use(login)
+
+
+app.get('/weather',(req,res)=>{
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=singapore&appid=${process.env.WEATHER_API_KEY}`
+    fetch(url)
+    .then(res => res.json())
+    .then(data => {
+        const weatherData = {
+            description : data['weather'][0]['description'],
+            icon: data['weather'][0]['icon'],
+            temp: Math.round(data['main']['temp'] -273.15)
+        }
+        res.status(200)
+        res.type('application/json')
+        res.json(weatherData)
+    }).catch(err=>{
+        res.status(400)
+        res.type('application/json')
+        res.json({error:err.message})
+    })
+
+})
 
 app.post('/signup/google',async (req,res)=>{
     const idToken = req.body.idToken
@@ -356,7 +381,7 @@ app.get('/check-session',async (req,res)=>{
     }
 
 })
-
+app.use(express.static('static'))
 
 // check if request has valid token before access
 app.use(checkAuth)
@@ -407,8 +432,8 @@ app.post("/create-checkout-session", async (req, res) => {
             line_items: line_items,
             client_reference_id:user,
             customer_email:user,
-            success_url: 'http://localhost:4200/#/payment-status?session_id={CHECKOUT_SESSION_ID}&status=success',
-            cancel_url: 'http://localhost:4200/#/payment-status?session_id={CHECKOUT_SESSION_ID}&status=fail',
+            success_url: 'http://localhost:3000/#/payment-status?session_id={CHECKOUT_SESSION_ID}&status=success',
+            cancel_url: 'http://localhost:3000/#/payment-status?session_id={CHECKOUT_SESSION_ID}&status=fail',
         });
         console.log('session',session)
         const order = makeOrder(user,session,cart)
@@ -463,6 +488,30 @@ app.get('/items/:id',async (req,res)=>{
     }
 })
 
+app.delete('/items/:id',async (req,res)=>{
+    try{
+        const id = req.params.id
+        const result = await client.db(MONGO_DB).collection(MONGO_COL).findOneAndDelete({_id:ObjectId(id)})
+        console.log(result['value']['images'])
+        const file = result['value']['images']
+        const deleteObjs = file.map(ele=>{
+            return {
+                Key: ele
+            }
+        })
+        bulkDelete(deleteObjs,s3)
+        res.status(200)
+        res.type('application/json')
+        res.json({message:'Item Deleted'})
+    } catch (err) {
+        console.log(err)
+        res.status(400)
+        res.type('application/json')
+        res.json({message:'Not Successful'})
+    }
+
+})
+
 app.get('/categories/:category', async (req,res)=>{
     const category = req.params.category
     console.log('category',category)
@@ -500,7 +549,12 @@ app.post('/item', upload.array('images',5), (req,res)=>{
                 res.status(200).type('application/json').json({message:"sucesss",insertId:data.insertedId})
             })
             .catch(err=>{
-                bulkDelete(files,s3)
+                const deleteObjs = file.map(ele=>{
+                    return {
+                        Key: ele.filename
+                    }
+                })
+                bulkDelete(deleteObjs,s3)
                 console.log('error',err)
                 res.status(500).type('application/json').json(err)
             })
@@ -508,13 +562,13 @@ app.post('/item', upload.array('images',5), (req,res)=>{
 
 
 
-app.use(function (err, req, res, next) {
-    if (res.headersSent) {
-        return next(err)
-      }
-    console.error('Error Catcher',err.stack)
-    res.status(500).send(err)
-})
+// app.use(function (err, req, res, next) {
+//     if (res.headersSent) {
+//         return next(err)
+//       }
+//     console.error('Error Catcher',err.stack)
+//     res.status(500).send(err)
+// })
 
 
 

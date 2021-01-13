@@ -33,14 +33,15 @@ export class SearchbarComponent implements OnInit, OnDestroy{
   search(){
     const search = this.form.get('search').value
     this.databaseService.searchItem.emit(search)
-    this.databaseService.searchItems(search)
-      .then(res=>{
-        console.log(res)
+    this.router.navigate(['/search',search])
+    // this.databaseService.searchItems(search)
+    //   .then(res=>{
+    //     console.log(res)
 
-        this.router.navigate(['/search',search])
-      })
-      .catch(err=>{
-        console.log(err)})
+        
+    //   })
+    //   .catch(err=>{
+        // console.log(err)})
   }
   logout(){
     this.authService.signOut()

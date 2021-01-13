@@ -33,12 +33,12 @@ export class AuthService implements CanActivate{
     
   }
   signupGoogle(idToken){
-    return this.http.post('/api/signup/google',{idToken},{observe:'response'}).toPromise()
+    return this.http.post('/signup/google',{idToken},{observe:'response'}).toPromise()
 
   }
 
   signinGoogle(idToken){
-    return this.http.post('/api/login/google',{idToken},{observe:'response'}).toPromise()
+    return this.http.post('/login/google',{idToken},{observe:'response'}).toPromise()
   }
 
   // signOut(): void {
@@ -46,10 +46,10 @@ export class AuthService implements CanActivate{
   // }
 
   signIn(data){
-    return this.http.post('/api/login',data,{observe:'response'}).toPromise()
+    return this.http.post('/login',data,{observe:'response'}).toPromise()
   }
   signUp(data){
-    return this.http.post('/api/signup',data,{observe:'response'}).toPromise()
+    return this.http.post('/signup',data,{observe:'response'}).toPromise()
   }
   signOut(){
     this.token = ''
@@ -64,9 +64,6 @@ export class AuthService implements CanActivate{
   canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot) {
     
     const path = route.routeConfig.path
-    console.log(path)
-    console.log(route.queryParamMap.get('status'))
-    console.log(route.queryParamMap.get('session_id'))
     if(path == 'payment-status' && route.queryParamMap.get('status') && route.queryParamMap.get('session_id'))
     {
       return true

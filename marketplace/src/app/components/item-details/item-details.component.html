@@ -33,7 +33,7 @@
           <p>Category: {{itemDetails.category | titlecase }}</p>
           <!-- <p>{{itemDetails.paymentMethod}}</p> -->
           <!-- <p>{{itemDetails.dealMethod}}</p> -->
-          <form [formGroup]="form" (ngSubmit)="addItem()">
+          <form *ngIf="role == 0" [formGroup]="form" (ngSubmit)="addItem()">
             <label for="">Qty:</label>
             <select class="form-control" formControlName="qty">
               <option value="1">1</option>
@@ -42,8 +42,9 @@
               <option value="4">4</option>
               <option value="5">5</option>
             </select>
-            <button class="mt-3 btn btn-info"[disabled]="form.invalid" type="submit">Add to Cart</button>
+            <button class="mt-3 btn btn-info" [disabled]="form.invalid" type="submit">Add to Cart</button>
           </form>
+          <button *ngIf="role == 1" class="mt-3 btn btn-info" (click)="deleteItem()" type="button">Delete</button>
         </div>
       </div>
     </div>

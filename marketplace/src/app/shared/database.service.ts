@@ -12,30 +12,37 @@ export class DatabaseService{
   searchItem: EventEmitter<string> = new EventEmitter()
 
   postItem(data){
-    return this.http.post('/api/item',data,{observe:"body"}).toPromise()
+    return this.http.post('/item',data,{observe:"body"}).toPromise()
   }
 
   getItemsSummary() {
 
-    return this.http.get('/api/items').toPromise()
+    return this.http.get('/items').toPromise()
 
   }
 
   getItem(id:string) {
-    return this.http.get(`/api/items/${id}`).toPromise()
+    return this.http.get(`/items/${id}`).toPromise()
   }
 
   searchCategoryItems(query:string){
-    return this.http.get(`/api/categories/${query}`).toPromise()
+    return this.http.get(`/categories/${query}`).toPromise()
   }
 
   searchItems(query:string){
     const params = new HttpParams().set('search',query)
-    return this.http.get('/api/search',{params}).toPromise()
+    return this.http.get('/search',{params}).toPromise()
   }
 
   getOrders():Promise<any[]>{
-    return this.http.get<any[]>('/api/myorders').toPromise()
+    return this.http.get<any[]>('/myorders').toPromise()
   }
 
+  getWeather(){
+    return this.http.get('/weather').toPromise()
+  }
+
+  deleteItem(id:string){
+    return this.http.delete(`/items/${id}`).toPromise()
+  }
 }

@@ -37,11 +37,7 @@ export class SignupComponent implements OnInit {
     const idToken = results['idToken']
     const result = await this.authService.signupGoogle(idToken)
     console.log(result)
-    // if(result.body.stat)
-    this.authService.token = result.body['token'];
-    this.authService.role = result.body['role']
-    this.authService.hasToken.emit(true);
-    this.authService.hasRole.emit(this.authService.role);
+    this.makeToken(result.body)
     this.router.navigate(['/']);
     }catch(err){
       console.log(err)
@@ -63,10 +59,7 @@ export class SignupComponent implements OnInit {
           console.log(res);
           if (res.status === 201) {
             alert(res['body']['message'])
-            this.authService.token = res.body['token'];
-            this.authService.role = res.body['role']
-            console.log(this.authService.token)
-            this.authService.hasToken.emit(true);
+            this.makeToken(res.body)
           }
           this.router.navigate(['/']);
         })
@@ -79,5 +72,12 @@ export class SignupComponent implements OnInit {
     }else{
       this.errorMessage = 'password dont match'
     }
+  }
+  makeToken(data){
+    this.authService.token = data['token']
+    this.authService.role = data['role']
+    this.authService.hasToken.emit(true)
+    this.authService.hasRole.emit(this.authService.role)
+
   }
 }

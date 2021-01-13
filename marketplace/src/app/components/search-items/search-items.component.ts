@@ -17,10 +17,18 @@ export class SearchItemsComponent implements OnInit,OnDestroy {
   constructor(private route:ActivatedRoute,private databaseService:DatabaseService) { }
   searchSubscription:Subscription
   ngOnInit(): void {
-    this.searchSubscription = this.databaseService.searchItem.subscribe(res=>this.search=res)
-    console.log(this.search)
-    this.category = this.route.snapshot.paramMap.get('category')
     this.search = this.route.snapshot.paramMap.get('search')
+    this.category = this.route.snapshot.paramMap.get('category')
+    this.searchSubscription = this.databaseService.searchItem.subscribe(res=>{
+      this.search=res
+      console.log(this.search)
+      this.databaseService.searchItems(this.search)
+        .then(res=>{
+          this.results=res as ItemSummary[]
+          console.log(this.results)
+        })
+        .catch(err=>console.log(err))
+    })    
     if(this.category){
       console.log(this.category)
       this.databaseService.searchCategoryItems(this.category)
@@ -36,6 +44,7 @@ export class SearchItemsComponent implements OnInit,OnDestroy {
           console.log(this.results)
         })
         .catch(err=>console.log(err))
+      
     }
   }
   ngOnDestroy(){

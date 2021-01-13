@@ -13,14 +13,9 @@ const authGoogle = async (idToken,oauthClient,GOOGLE_CLIENT_ID) => {
             picture:payload['picture']
         }
         return userDetails
-        // let token = jwt.sign({data:userDetails}, process.env.GOOGLE_CLIENT_SECRET, {
-        //     expiresIn: 900 // 15mins
-        // })
-        // req.token = token
-        // console.log(token)
-        // next()
+
     }catch(err){
-        // console.log(err)
+
         return err
         
     }
