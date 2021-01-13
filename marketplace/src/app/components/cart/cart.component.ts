@@ -11,6 +11,7 @@ import { PaymentService } from 'src/app/shared/payment.service';
 export class CartComponent implements OnInit {
   total:number = 0
   cart:CartItemsDetail[]=[]
+  errorMessage:string = ''
   constructor(private cartService:CartService,private paymentService:PaymentService) { }
 
   ngOnInit(): void {
@@ -25,11 +26,12 @@ export class CartComponent implements OnInit {
 
   checkout(){
     this.paymentService.createCheckoutSession({cart:this.cart}).then(res=>{
+      
       // Call Stripe.js method to redirect to the new Checkout page
       console.log(res)
       stripe
         .redirectToCheckout({
-          sessionId: res['sessionId']
+          sessionId: res['body']['sessionId']
         })
         .then((res)=>{
           console.log(res)
@@ -40,6 +42,11 @@ export class CartComponent implements OnInit {
           console.error("Error:", error)
         })
       
+  }).catch(err =>{
+    // console.log(err['error'].error.message)
+    if(err.status ==400){
+      this.errorMessage = err['error'].error.message
+    }
   })
   }
 

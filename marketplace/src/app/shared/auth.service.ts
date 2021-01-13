@@ -5,9 +5,10 @@ import {
   GoogleLoginProvider,
   SocialUser,
 } from 'angularx-social-login';
+import { ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot } from "@angular/router";
 
 @Injectable()
-export class AuthService {
+export class AuthService implements CanActivate{
 
   user: SocialUser;
   loggedIn: boolean;
@@ -16,7 +17,7 @@ export class AuthService {
   @Output() hasToken: EventEmitter<boolean> = new EventEmitter()
   @Output() hasRole: EventEmitter<number> = new EventEmitter()
 
-  constructor(private authService: SocialAuthService, private http:HttpClient) {}
+  constructor(private authService: SocialAuthService, private http:HttpClient, private router:Router) {}
 
   ngOnInit() {
     // this.authService.authState.subscribe((user) => {
@@ -54,5 +55,24 @@ export class AuthService {
     this.token = ''
     this.loggedIn = false
     this.hasToken.emit(false)
+  }
+
+  isLogin() {
+    return this.token != ''
+  }
+
+  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot) {
+    
+    const path = route.routeConfig.path
+    console.log(path)
+    console.log(route.queryParamMap.get('status'))
+    console.log(route.queryParamMap.get('session_id'))
+    if(path == 'payment-status' && route.queryParamMap.get('status') && route.queryParamMap.get('session_id'))
+    {
+      return true
+    }
+    if(this.isLogin())
+      return true
+    return this.router.parseUrl('/')
   }
 }

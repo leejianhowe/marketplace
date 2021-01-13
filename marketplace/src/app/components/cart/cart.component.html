@@ -5,8 +5,8 @@
             <th scope="col">#</th>
             <th scope="col">Item</th>
             <th scope="col">Qty</th>
-            <th scope="col">Price($)</th>
-            <th scope="col">Subtotal($)</th>
+            <th scope="col">Price</th>
+            <th scope="col">Subtotal</th>
           </tr>
         </thead>
         <tbody>
@@ -14,8 +14,8 @@
             <th scope="row">{{i+1}}</th>
             <td>{{item.title}}</td>
             <td>{{item.qty}}</td>
-            <td>{{item.price}}</td>
-            <td>{{item.qty * item.price}}</td>
+            <td>{{item.price | currency }}</td>
+            <td>{{item.qty * item.price | currency}}</td>
           </tr>
         </tbody>
         <tfoot>
@@ -26,5 +26,8 @@
       <div class="row d-flex justify-content-end">
           <button class="btn btn-success" type="button" (click)="checkout()">Checkout</button>
 
+      </div>
+      <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+       {{errorMessage}}
       </div>
 </div>

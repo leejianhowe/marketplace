@@ -1,5 +1,5 @@
-import { Injectable } from "@angular/core";
-import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http'
+import { Injectable,Output,EventEmitter } from "@angular/core";
+import {HttpClient, HttpParams} from '@angular/common/http'
 import { AuthService } from "./auth.service";
 
 @Injectable()
@@ -8,35 +8,34 @@ export class DatabaseService{
   url:string ='https://marketplacesg.sfo2.digitaloceanspaces.com'
 
   constructor(private http:HttpClient,private authService: AuthService){}
-
-
+  
+  searchItem: EventEmitter<string> = new EventEmitter()
 
   postItem(data){
-    return this.http.post('/api/item',data,{observe:"body"})
+    return this.http.post('/api/item',data,{observe:"body"}).toPromise()
   }
 
-  async getItemsSummary() {
-    // const headers = new HttpHeaders({'x-token':this.authService.user.idToken})
-    // console.log(headers)
-    return await this.http.get('/api/items').toPromise()
+  getItemsSummary() {
+
+    return this.http.get('/api/items').toPromise()
 
   }
 
-  async getItem(id:string) {
-    return await this.http.get(`/api/items/${id}`).toPromise()
+  getItem(id:string) {
+    return this.http.get(`/api/items/${id}`).toPromise()
   }
 
-  async searchCategoryItems(query:string){
-    return await this.http.get(`/api/categories/${query}`).toPromise()
+  searchCategoryItems(query:string){
+    return this.http.get(`/api/categories/${query}`).toPromise()
   }
 
-  async searchItems(query:string){
+  searchItems(query:string){
     const params = new HttpParams().set('search',query)
-    return await this.http.get('/api/search',{params}).toPromise()
+    return this.http.get('/api/search',{params}).toPromise()
   }
 
-  async getOrders():Promise<any[]>{
-    return await this.http.get<any[]>('/api/myorders').toPromise()
+  getOrders():Promise<any[]>{
+    return this.http.get<any[]>('/api/myorders').toPromise()
   }
 
 }

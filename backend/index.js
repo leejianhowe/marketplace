@@ -33,6 +33,10 @@ const jwt = require('jsonwebtoken')
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_KEY);
 
+//dotenv config
+const dotenv = require('dotenv');
+dotenv.config();
+
 // modules
 const {bulkDelete,makeSession,makeOrder,makeItem,putObject,uploadFiles,summariseData,makeCart} = require('./modules')
 const {generateToken,mkAuth,authGoogle,generateUserInfo} = require('./auth.modules')
@@ -120,6 +124,7 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const PORT = parseInt(process.argv[2]) || parseInt(process.env.PORT) || 3000
 const maxSize = 5 * 1000 * 1000 // 5mb 
 const upload = multer({dest:'uploads/',limits: { fileSize: maxSize }})
+const weatherApi = 'api.openweathermap.org/data/2.5/weather?q={city name}&appid={API key}'
 
 const MONGO_DB = 'marketplace'
 const MONGO_COL = 'items'
@@ -130,11 +135,13 @@ const MONGO_COL_SESSIONS = 'sessions'
 const MONGO_URI = `mongodb+srv://spaceman:${process.env.MONGO_PASS}@nosqldb.u0xa5.mongodb.net/${MONGO_DB}?retryWrites=true&w=majority`
 const client = new MongoClient(MONGO_URI,{useNewUrlParser:true,useUnifiedTopology:true})
 
-const credentials = new AWS.SharedIniFileCredentials({profile: 'marketplacesg'});
-AWS.config.credentials = credentials
+// const credentials = new AWS.SharedIniFileCredentials({profile: 'marketplacesg'});
+// AWS.config.credentials = credentials
 const endpoint = new AWS.Endpoint('sfo2.digitaloceanspaces.com')
 const s3 = new AWS.S3({
     endpoint: endpoint,
+    accessKeyId: process.env.SPACES_KEY,
+    secretAccessKey: process.env.SPACES_SECRET
 })
 
 const app = express()
@@ -143,7 +150,6 @@ app.use(express.urlencoded({extended:true}))
 app.use(express.json())
 app.use(passport.initialize());
 // app.use(login)
-
 
 app.post('/signup/google',async (req,res)=>{
     const idToken = req.body.idToken
@@ -242,7 +248,7 @@ app.post('/login/google',async (req,res)=>{
             const token = generateToken(jwt,userInfo,TOKEN_SECRET)
             res.status(200)
             res.type('application/json')
-            res.json({ message: `Login in at ${new Date()}`, token,role:user.role })
+            res.json({ message: `Login in at ${new Date()}`, token,role:userInfo.role })
         } else {
             res.status(400)
             res.type('application/json')
@@ -332,7 +338,7 @@ app.get('/check-session',async (req,res)=>{
 
             
         } else {
-            const order = await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).findOne({session_id:session_id,payment_status:'unpaid'})
+            const order = await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).findOne({session_id:session_id,payment_status:'unpaid'},{$set:{payment_status:'paid'}})
             const session = await client.db(MONGO_DB).collection(MONGO_COL_SESSIONS).findOne({session_id:session_id})
             console.log('order',order)
             console.log('session',session)
@@ -356,12 +362,11 @@ app.get('/check-session',async (req,res)=>{
 app.use(checkAuth)
 
 app.get('/myorders',async (req,res)=>{
-    // const user = req.token.sub
-    const user = 'fred@gmail.com'
+    const user = req.token.sub
     try{
         const orders = await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).aggregate([
-            {$match:{user:user}},
-            { $sort : { payment_status:1,timestamp : -1 } },
+            {$match:{user:user,payment_status:'paid'}},
+            { $sort : { timestamp : -1 } },
             {$project:{_id:false,payment_status:true,order:true,timestamp:true}}
         ]).toArray()
         console.log(orders)
@@ -380,16 +385,21 @@ app.get('/myorders',async (req,res)=>{
 
 app.post("/create-checkout-session", async (req, res) => {
     const cart = req.body.cart;
-    
     const user = req.token.sub
     console.log('user',user)
     console.log('cart recived',cart)
     const line_items = makeCart(cart)
     console.log(line_items)
     const token = req.encodedToken
-    const sessionMongo = client.startSession();
+    // const sessionMongo = client.startSession();
     // See https://stripe.com/docs/api/checkout/sessions/create
     // for additional parameters to pass.
+    const mongoSession = client.startSession()
+    const transactionOptions = {
+        readPreference: 'primary',
+        readConcern: { level: 'local' },
+        writeConcern: { w: 'majority' }
+    }
     try {
         const session = await stripe.checkout.sessions.create({
             mode: "payment",
@@ -403,9 +413,17 @@ app.post("/create-checkout-session", async (req, res) => {
         console.log('session',session)
         const order = makeOrder(user,session,cart)
         const sessionData = makeSession(user,session,token)
-        await client.db(MONGO_DB).collection(MONGO_COL_ORDERS).insertOne(order)
-        await client.db(MONGO_DB).collection(MONGO_COL_SESSIONS).insertOne(sessionData)
-        // console.log(insertResult)
+        await mongoSession.withTransaction(async () => {
+            // Important:: You must pass the session to the operations
+            const insert1 = client.db(MONGO_DB).collection(MONGO_COL_ORDERS)
+            const result1 = await insert1.insertOne(order, { mongoSession })
+            const insert2 = client.db(MONGO_DB).collection(MONGO_COL_SESSIONS)
+            const result2 = await insert2.insertOne(sessionData, { mongoSession })
+            // const result2 = null
+            console.log(result1)
+            console.log(result2)
+          }, transactionOptions)
+        // console.log(result)
         res.json({
             sessionId: session.id,
         });
@@ -418,6 +436,9 @@ app.post("/create-checkout-session", async (req, res) => {
             message: e.message,
             }
         });
+    } finally {
+        
+        mongoSession.endSession();
     }
 });
 
@@ -433,9 +454,9 @@ app.get('/items',async (req,res)=>{
 
 app.get('/items/:id',async (req,res)=>{
     try{
-    const id = req.params.id
-    const result  = await client.db(MONGO_DB).collection(MONGO_COL).findOne({_id:ObjectId(id)})
-    res.status(200).type('application/json').json(result)
+        const id = req.params.id
+        const result  = await client.db(MONGO_DB).collection(MONGO_COL).findOne({_id:ObjectId(id)})
+        res.status(200).type('application/json').json(result)
     }catch(err){
         console.log(err)
         res.status(404).type('application/json').json(err.message)

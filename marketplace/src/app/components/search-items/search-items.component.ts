@@ -1,5 +1,6 @@
-import { Component, OnChanges, OnInit ,SimpleChanges} from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { DatabaseService } from 'src/app/shared/database.service';
 import { ItemSummary } from 'src/app/shared/model';
 
@@ -8,15 +9,16 @@ import { ItemSummary } from 'src/app/shared/model';
   templateUrl: './search-items.component.html',
   styleUrls: ['./search-items.component.css']
 })
-export class SearchItemsComponent implements OnInit {
+export class SearchItemsComponent implements OnInit,OnDestroy {
   results:ItemSummary[] = []
   category:string = ''
   search:string = ''
   url:string= this.databaseService.url
   constructor(private route:ActivatedRoute,private databaseService:DatabaseService) { }
-
+  searchSubscription:Subscription
   ngOnInit(): void {
-
+    this.searchSubscription = this.databaseService.searchItem.subscribe(res=>this.search=res)
+    console.log(this.search)
     this.category = this.route.snapshot.paramMap.get('category')
     this.search = this.route.snapshot.paramMap.get('search')
     if(this.category){
@@ -35,6 +37,9 @@ export class SearchItemsComponent implements OnInit {
         })
         .catch(err=>console.log(err))
     }
+  }
+  ngOnDestroy(){
+    this.searchSubscription.unsubscribe()
   }
 
 }

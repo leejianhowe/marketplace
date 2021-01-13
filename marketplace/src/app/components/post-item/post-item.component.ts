@@ -54,18 +54,18 @@ export class PostItemComponent implements OnInit {
       // data.append('dealMethod', this.form.value.dealMethod);
       // data.append('paymentMethod', this.form.value.paymentMethod);
       const results = this.databaseService.postItem(data);
-      results.subscribe(
+      results.then(
         (res) => {
           console.log(res);
           this.form.reset()
           console.log(this.images.nativeElement.value)
           this.router.navigate(['/']);
-        },
+        }).catch(
         (err) => {
           console.log(err);
           if ((err.status = 500)) this.errorMessage = err.error.message;
         }
-      );
+      )
     }
   }
 
