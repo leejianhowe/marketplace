@@ -38,7 +38,7 @@ export class SignupComponent implements OnInit {
     const result = await this.authService.signupGoogle(idToken)
     console.log(result)
     this.makeToken(result.body)
-    this.router.navigate(['/']);
+    this.router.navigate(['/main']);
     }catch(err){
       console.log(err)
       this.errorMessage = err.error.error.message
@@ -61,7 +61,7 @@ export class SignupComponent implements OnInit {
             alert(res['body']['message'])
             this.makeToken(res.body)
           }
-          this.router.navigate(['/']);
+          this.router.navigate(['/main']);
         })
         .catch((err) => {
           console.log('error', err);

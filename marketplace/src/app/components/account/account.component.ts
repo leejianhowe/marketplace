@@ -22,7 +22,7 @@ export class AccountComponent implements OnInit {
     this.role = this.authService.role;
     this.authService.getAccountDetails().then(res=>{
       this.userDetails = res
-      console.log(this.userDetails)
+      // console.log(this.userDetails)
     }).catch(err=>console.log(err))
     if (this.role == 1) {
       this.databaseService.getBalance().then((data) => {
@@ -57,7 +57,7 @@ export class AccountComponent implements OnInit {
             this.formattedResult.push(obj);
           }
         });
-        console.log(this.formattedResult);
+        // console.log(this.formattedResult);
       });
     }
   }
