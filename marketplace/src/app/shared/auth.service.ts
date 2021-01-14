@@ -6,7 +6,7 @@ import {
   SocialUser,
 } from 'angularx-social-login';
 import { ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot } from "@angular/router";
-
+import {CartService} from './cart.service'
 @Injectable()
 export class AuthService implements CanActivate{
 
@@ -17,7 +17,7 @@ export class AuthService implements CanActivate{
   @Output() hasToken: EventEmitter<boolean> = new EventEmitter()
   @Output() hasRole: EventEmitter<number> = new EventEmitter()
 
-  constructor(private authService: SocialAuthService, private http:HttpClient, private router:Router) {}
+  constructor(private cartService: CartService,private authService: SocialAuthService, private http:HttpClient, private router:Router) {}
 
   ngOnInit() {
     // this.authService.authState.subscribe((user) => {
@@ -54,8 +54,10 @@ export class AuthService implements CanActivate{
   signOut(){
     this.token = ''
     this.loggedIn = false
+    this.cartService.cart = []
     this.hasToken.emit(false)
     this.hasRole.emit(0)
+    
   }
 
   isLogin() {

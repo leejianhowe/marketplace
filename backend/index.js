@@ -459,8 +459,8 @@ app.post("/create-checkout-session", async (req, res) => {
             line_items: line_items,
             client_reference_id:user,
             customer_email:user,
-            success_url: 'http://localhost:4200/#/payment-status?session_id={CHECKOUT_SESSION_ID}&status=success',
-            cancel_url: 'http://localhost:4200/#/payment-status?session_id={CHECKOUT_SESSION_ID}&status=fail',
+            success_url: 'http://localhost:3000/#/payment-status?session_id={CHECKOUT_SESSION_ID}&status=success',
+            cancel_url: 'http://localhost:3000/#/payment-status?session_id={CHECKOUT_SESSION_ID}&status=fail',
         });
         console.log('session',session)
         const order = makeOrder(user,session,cart)
