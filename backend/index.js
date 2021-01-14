@@ -2,6 +2,7 @@
 const dotenv = require('dotenv');
 dotenv.config();
 
+
 // node-fetch
 const fetch = require('node-fetch')
 // express morgan
@@ -16,6 +17,7 @@ const {MongoClient,ObjectId} = require('mongodb')
 const AWS = require('aws-sdk')
 const multer = require('multer')
 const fs = require('fs')
+const path = require('path');
 
 // authentication with google with idtoken
 const {
@@ -43,7 +45,7 @@ const stripe = Stripe(process.env.STRIPE_KEY);
 
 
 // modules
-const {bulkDelete,makeSession,makeOrder,makeItem,putObject,uploadFiles,summariseData,makeCart} = require('./modules')
+const {getBalance,bulkDelete,makeSession,makeOrder,makeItem,putObject,uploadFiles,summariseData,makeCart} = require('./modules')
 const {generateToken,mkAuth,authGoogle,generateUserInfo} = require('./auth.modules')
 
 // configure local stratgey
@@ -153,6 +155,7 @@ app.use(morgan('combined'))
 app.use(express.urlencoded({extended:true}))
 app.use(express.json())
 app.use(passport.initialize());
+
 
 
 app.get('/weather',(req,res)=>{
@@ -408,8 +411,28 @@ app.get('/myorders',async (req,res)=>{
 
 })
 
+app.get('/account/details', async (req,res)=>{
+    const user = req.token.sub
+    try{
+        let userDetails = await client.db(MONGO_DB).collection(MONGO_COL_USERS).aggregate([{$match:{username:user}},{$project:{_id:0,picture:1,username:1,name:1}}]).toArray()
+        userDetails = userDetails[0]
+        console.log(userDetails)
+        res.status(200)
+        res.type('application/json')
+        res.json(userDetails)
+    } catch(err){
+        res.status(400)
+        res.type('application/json')
+        res.json({error:err.message})
+
+    }
+
+})
+
 app.post("/create-checkout-session", async (req, res) => {
     const cart = req.body.cart;
+    
+
     const user = req.token.sub
     console.log('user',user)
     console.log('cart recived',cart)
@@ -426,34 +449,48 @@ app.post("/create-checkout-session", async (req, res) => {
         writeConcern: { w: 'majority' }
     }
     try {
+        if(cart.length==0)
+        {
+            throw new Error('cart empty')
+        }
         const session = await stripe.checkout.sessions.create({
             mode: "payment",
             payment_method_types: ["card"],
             line_items: line_items,
             client_reference_id:user,
             customer_email:user,
-            success_url: 'http://localhost:3000/#/payment-status?session_id={CHECKOUT_SESSION_ID}&status=success',
-            cancel_url: 'http://localhost:3000/#/payment-status?session_id={CHECKOUT_SESSION_ID}&status=fail',
+            success_url: 'http://localhost:4200/#/payment-status?session_id={CHECKOUT_SESSION_ID}&status=success',
+            cancel_url: 'http://localhost:4200/#/payment-status?session_id={CHECKOUT_SESSION_ID}&status=fail',
         });
         console.log('session',session)
         const order = makeOrder(user,session,cart)
         const sessionData = makeSession(user,session,token)
-        await mongoSession.withTransaction(async () => {
-            // Important:: You must pass the session to the operations
-            const insert1 = client.db(MONGO_DB).collection(MONGO_COL_ORDERS)
-            const result1 = await insert1.insertOne(order, { mongoSession })
-            const insert2 = client.db(MONGO_DB).collection(MONGO_COL_SESSIONS)
-            const result2 = await insert2.insertOne(sessionData, { mongoSession })
-            // const result2 = null
-            console.log(result1)
-            console.log(result2)
-          }, transactionOptions)
-        // console.log(result)
+        mongoSession.startTransaction(transactionOptions)
+
+        const insert1 = client.db(MONGO_DB).collection(MONGO_COL_ORDERS)
+        const result1 = await insert1.insertOne(order,  {session: mongoSession} )
+        // if(!result1){
+        //     await mongoSession.abortTransaction()
+        //     console.log('unable to write to insert to Order Table')
+        //     throw new Error('unable to write ')
+        // }
+        const insert2 = client.db(MONGO_DB).collection(MONGO_COL_SESSIONS)
+        const result2 = await insert2.insertOne(sessionData, {session: mongoSession} )
+        // result2= null
+        // if(!result2){
+        //     await mongoSession.abortTransaction()
+        //     console.log('unable to write to insert to Session Table')
+        //     throw new Error('unable to write ')
+        // }
+        console.log('first insert',result1.insertedCount)
+        console.log('second insert',result2.insertedCount)
+        await mongoSession.commitTransaction()
         res.json({
             sessionId: session.id,
         });
         
     } catch (e) {
+        await mongoSession.abortTransaction()
         console.log(e)
         res.status(400);
         res.json({
@@ -462,10 +499,22 @@ app.post("/create-checkout-session", async (req, res) => {
             }
         });
     } finally {
-        
         mongoSession.endSession();
     }
 });
+
+app.get('/stripe/get-balance',async (req,res)=>{
+    const balance = await getBalance(stripe)
+    console.log(balance)
+
+    const wallet = {
+        avaliable: balance['available'][0]['amount']/100,
+        pending: balance['pending'][0]['amount'] / 100
+    }
+    res.status(200)
+    res.type('application/json')
+    res.json(wallet)
+})
 
 
 
@@ -545,7 +594,17 @@ app.post('/item', upload.array('images',5), (req,res)=>{
         Promise.all([...uploadedFiles])
             .then(()=>client.db(MONGO_DB).collection(MONGO_COL).insertOne(newListing))
             .then((data)=>{
-                console.log('success Mongo',data.insertedId)
+                console.log('insert id',data.insertedId)
+                fs.readdir('uploads', (err, files) => {
+                    if (err) throw err;
+                  
+                    for (const file of files) {
+                      fs.unlink(path.join('uploads', file), err => {
+                        if (err) throw err;
+                      });
+                    }
+                  });
+                
                 res.status(200).type('application/json').json({message:"sucesss",insertId:data.insertedId})
             })
             .catch(err=>{

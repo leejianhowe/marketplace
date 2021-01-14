@@ -24,6 +24,12 @@ export class CartComponent implements OnInit {
 
   }
 
+  emptyCart(){
+    this.cart = []
+    this.cartService.emptyCart()
+    this.total= 0
+  }
+
   checkout(){
     this.paymentService.createCheckoutSession({cart:this.cart}).then(res=>{
       

@@ -45,4 +45,8 @@ export class DatabaseService{
   deleteItem(id:string){
     return this.http.delete(`/items/${id}`).toPromise()
   }
+
+  getBalance(){
+    return this.http.get<{available:number,pending:number}>('/stripe/get-balance').toPromise()
+  }
 }

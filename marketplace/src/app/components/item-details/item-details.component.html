@@ -1,4 +1,4 @@
-<div class="container">
+<div class="container-fluid">
 
   <div *ngIf="message" class="alert alert-success alert-dismissible fade show" role="alert">
     {{message}}
@@ -6,25 +6,29 @@
       <span aria-hidden="true">&times;</span>
     </button>
   </div>
-  <div class="mt-3 row" *ngIf="itemDetails.category">
-    <a [routerLink]="['/categories',itemDetails.category.toLowerCase()]">{{itemDetails.category | titlecase }}</a>
+  <div class="mt-3 row d-flex justify-content-start" *ngIf="itemDetails.category">
+    <div class="col-md-3">
+      <a [routerLink]="['/categories',itemDetails.category.toLowerCase()]">{{itemDetails.category | titlecase }}</a>
+    </div>
   </div>
   <div class="row mt-3">
-    <div class="col-6">
-      <div class="row">
-        <div class="col-2">
+    <div class="col-md-6 ">
+      <div class="row d-flex justify-content-center">
+        <div class="col-md-2">
           <ul class="list-group" *ngFor="let item of images">
-            <li class="list-group-item"style="height: 64px; width:64px"><img style="height: 100%; width: 100%;"  src="{{url}}/{{item}}" (click)="changeImage(item)"></li>
+            <li class="list-group-item" style="height: 64px; width:64px">
+              <img style="height: auto; width: 100%;"  src="{{url}}/{{item}}" (click)="changeImage(item)">
+            </li>
           </ul>
         </div>
-        <div class="col-4">
-        <img style="width: 400px;" src="{{url}}/{{displayImage}}">
+        <div class="col-md-4">
+          <img style="width: 400px;" src="{{url}}/{{displayImage}}">
         </div>
       </div>
     </div>
-    <div class="col-6" *ngIf="itemDetails">
+    <div class="col-md-6 d-flex justify-content-center" *ngIf="itemDetails">
       <div class="card" style="width: 18rem;">
-        <div class="card-body">
+        <div class="card-body ">
           <h5 class="card-title">{{itemDetails.title}}</h5>
           <p class="card-text">{{itemDetails.description}}</p>
           <p>Price: {{itemDetails.price | currency}}</p>

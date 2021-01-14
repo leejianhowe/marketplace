@@ -55,10 +55,15 @@ export class AuthService implements CanActivate{
     this.token = ''
     this.loggedIn = false
     this.hasToken.emit(false)
+    this.hasRole.emit(0)
   }
 
   isLogin() {
     return this.token != ''
+  }
+
+  getAccountDetails(){
+    return this.http.get('/account/details').toPromise()
   }
 
   canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot) {

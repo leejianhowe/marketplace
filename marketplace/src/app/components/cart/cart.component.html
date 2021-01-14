@@ -1,4 +1,4 @@
-<div class="container">
+<div class="container-fluid">
     <table class="table">
         <thead>
           <tr>
@@ -24,7 +24,8 @@
         </tfoot>
       </table>
       <div class="row d-flex justify-content-end">
-          <button class="btn btn-success" type="button" (click)="checkout()">Checkout</button>
+          <button class="mr-3 btn btn-success" type="button" [disabled]="!cart.length" (click)="checkout()">Checkout</button>
+          <button class="mr-3 btn btn-danger" type="button" [disabled]="cart.length == 0" (click)="emptyCart()">Empty Cart</button>
 
       </div>
       <div *ngIf="errorMessage" class="alert alert-danger" role="alert">

@@ -13,5 +13,9 @@ export class CartService {
         this.cart.push(item)
 
     }
+    
+    emptyCart(){
+        this.cart = []
+    }
 
 }

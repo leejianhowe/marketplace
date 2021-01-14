@@ -109,6 +109,16 @@ const makeSession = (user,session,token)=>{
     }
 }
 
+const getBalance = (stripe)=>{
+    
+    return new Promise((res, rej) => {
+        stripe.balance.retrieve((err, balance)=> {
+            if(err)
+                rej(err)
+            res(balance)
+          })
+    })
+    
+}
 
-
-module.exports = {bulkDelete,makeSession,makeOrder,makeItem,putObject,uploadFiles,summariseData,makeCart}
+module.exports = {bulkDelete,makeSession,makeOrder,makeItem,putObject,uploadFiles,summariseData,makeCart,getBalance}

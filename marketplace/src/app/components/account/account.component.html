@@ -1,48 +1,51 @@
-<div class="container">
-<table class="table">
+<div class="container-fluid">
+
+    <div class="row mt-3">
+        <div class="col-md-12 styling">
+            <h3>Account Details</h3>
+        </div>
+        <div class="col-md-6 styling">
+            <img src="{{userDetails.picture}}" style="height: auto; width:100px">
+        </div>
+        <div class="col-md-6 styling d-flex justify-content-center align-items-center">
+            Welcome: {{userDetails.name}}
+        </div>
+    </div>
+    <div *ngIf="role == 1"class="row mt-3">
+        <div class="col-md-12 styling">
+            Store Balance
+        </div>
+        <div class="col-md-6 styling">
+            Avaliable: {{wallet.avaliable | currency}}
+        </div>
+        <div class="col-md-6 styling">
+            Pending: {{wallet.pending | currency}}
+        </div>
+    </div>
+  <table *ngIf="role == 0" class="table mt-3">
     <thead>
-        <th>#</th>
-        <th>Payment Status</th>
-        <th>
-            <div class="table-borderless">
-                        <col width="100px" />
-                        <col width="100px" />
-                        <col width="100px" />
-                <td colspan="">Item</td>
-                <td colspan="">Qty</td>
-                <td colspan="">Price</td>
-            </div>
-        </th>
-        <th>Order Date</th>
+      <th>#</th>
+      <th>Payment Status</th>
+      <th>Item</th>
+      <th>Qty</th>
+      <th>Price</th>
+      <th>Order Date</th>
     </thead>
     <tbody>
-        <tr *ngFor="let order of orders; let index=index">
-            <td>{{index+1}}</td>
-            <td>{{order.payment_status | uppercase}}</td>
-            <!-- <td > -->
-                <!-- <table class="table table-bordered"> -->
-                    <!-- <tbody> -->
-                    <div *ngFor="let item of order.order">
-                        <col width="100px" />
-                        <col width="100px" />
-                        <col width="100px" />
-                        <tbody>
-                            <td colspan="2">
-                                {{item.title}}
-                            </td>
-                            <td colspan="2">
-                                {{item.qty}}
-                            </td>
-                            <td colspan="2">
-                                {{item.price* item.qty | currency}}
-                            </td>
-                        </tbody>
-                    </div>
-                <!-- </tbody>
-                </table>
-            </td> -->
-            <td>{{order.timestamp | date}}</td>
-        </tr>
+      <tr *ngFor="let item of formattedResult; let index = index">
+        <td>{{ index + 1 }}</td>
+        <td>{{ item.payment_status | uppercase }}</td>
+        <td>
+          {{ item.title | titlecase }}
+        </td>
+        <td>
+          {{ item.qty | number }}
+        </td>
+        <td>
+          {{ item.price * item.qty | currency }}
+        </td>
+        <td>{{ item.timestamp | date }}</td>
+      </tr>
     </tbody>
-</table>
+  </table>
 </div>
