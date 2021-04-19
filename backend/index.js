@@ -143,8 +143,11 @@ const client = new MongoClient(MONGO_URI,{useNewUrlParser:true,useUnifiedTopolog
 
 // const credentials = new AWS.SharedIniFileCredentials({profile: 'marketplacesg'});
 // AWS.config.credentials = credentials
-const endpoint = new AWS.Endpoint('sfo2.digitaloceanspaces.com')
+const endpoint = new AWS.Endpoint('https://storageapi.fleek.co')
 const s3 = new AWS.S3({
+    apiVersion: '2006-03-01',
+    region: 'us-east-1',
+    s3ForcePathStyle: true,
     endpoint: endpoint,
     accessKeyId: process.env.SPACES_KEY,
     secretAccessKey: process.env.SPACES_SECRET
@@ -494,7 +497,7 @@ app.delete('/items/:id',async (req,res)=>{
         const file = result['value']['images']
         const deleteObjs = file.map(ele=>{
             return {
-                Key: ele
+                Key: `images/${ele}`
             }
         })
         bulkDelete(deleteObjs,s3)
@@ -557,7 +560,7 @@ app.post('/item', upload.array('images',5), (req,res)=>{
                 res.status(200).type('application/json').json({message:"sucesss",insertId:data.insertedId})
             })
             .catch(err=>{
-                const deleteObjs = file.map(ele=>{
+                const deleteObjs = files.map(ele=>{
                     return {
                         Key: ele.filename
                     }
