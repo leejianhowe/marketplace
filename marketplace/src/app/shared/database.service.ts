@@ -5,7 +5,8 @@ import { AuthService } from "./auth.service";
 @Injectable()
 export class DatabaseService{
 
-  url:string ='https://marketplacesg.sfo2.digitaloceanspaces.com'
+  // url:string ='https://spacemandeveloper-team-bucket.storage.fleek.co'
+  url:string ='https://storageapi.fleek.co/spacemandeveloper-team-bucket/images'
 
   constructor(private http:HttpClient,private authService: AuthService){}
   

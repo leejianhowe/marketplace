@@ -18,7 +18,8 @@ export class ItemDetailsComponent implements OnInit {
   images: string[] = [];
   itemId: string;
   message: string;
-  url: string = 'https://marketplacesg.sfo2.digitaloceanspaces.com';
+  // url: string = 'https://marketplacesg.sfo2.digitaloceanspaces.com';
+  url: string = this.dataBaseService.url;
   role: number ;
 
   constructor(

@@ -15,8 +15,8 @@ const makeItem = (body,files)=>{
 
 const putObject = (file, s3, data) => {
     const params = {
-        Bucket: 'marketplacesg',
-        Key: file.filename,
+        Bucket: 'spacemandeveloper-team-bucket',
+        Key: `images/${file.filename}`,
         ACL: 'public-read',
         Body: data,
         ContentType: file.mimetype,
@@ -39,7 +39,7 @@ const bulkDelete = (deleteObjs,s3) =>{
     // })
     // console.log(deleteObjs)
     const params = {
-        Bucket: "marketplacesg", 
+        Bucket: 'spacemandeveloper-team-bucket', 
         Delete: {
             Objects: deleteObjs, 
             Quiet: false
